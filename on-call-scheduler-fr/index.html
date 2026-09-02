@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur Astreintes — Guyane</title>
+<style>
+  :root{
+    --bg: #F6F7F4;
+    --card: #FFFFFF;
+    --ink: #1B2B22;
+    --ink-soft: #5B6B60;
+    --ink-faint: #93A199;
+    --border: #E4E8E1;
+    --emerald: #0B6E4F;
+    --emerald-dark: #08543C;
+    --emerald-tint: #E7F3EC;
+    --gold: #B8912E;
+    --gold-dark: #8A6A1F;
+    --gold-tint: #F6EFDD;
+    --open: #1E8E5A;
+    --open-tint: #E7F5EE;
+    --closed: #C1402F;
+    --closed-tint: #FBEAE7;
+    --warn: #DB8A22;
+    --warn-tint: #FCF0DE;
+    --shadow-sm: 0 1px 2px rgba(27,43,34,0.06), 0 1px 1px rgba(27,43,34,0.04);
+    --shadow-md: 0 8px 24px rgba(27,43,34,0.08), 0 2px 6px rgba(27,43,34,0.04);
+    --shadow-lg: 0 20px 50px rgba(11,110,79,0.10), 0 6px 16px rgba(27,43,34,0.06);
+    --radius-lg: 22px;
+    --radius-md: 14px;
+    --radius-sm: 9px;
+    --font-ui: "Segoe UI", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --font-num: "Segoe UI", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family: var(--font-ui);
+    color: var(--ink);
+    background: var(--bg);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding: 30px 20px;
+  }
+  .app{
+    width:100%;
+    max-width: 1200px;
+    display:flex;
+    flex-direction:column;
+    gap: 20px;
+  }
+
+  /* Landing page */
+  .landing{
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 50px 40px;
+    text-align:center;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    max-width: 600px;
+    margin: 0 auto;
+    width:100%;
+  }
+  .landing .icon{ font-size: 64px; margin-bottom: 16px; }
+  .landing h1{ font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .landing p{ font-size: 14px; color: var(--ink-soft); margin-bottom: 24px; }
+  .landing .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor:pointer;
+    font-family:inherit;
+    border:none;
+    background: var(--emerald);
+    color: #fff;
+    transition: background .2s ease, transform .1s ease;
+  }
+  .landing .btn:hover{ background: var(--emerald-dark); }
+  .landing .btn:active{ transform: scale(0.97); }
+  .landing .btn svg{ width:20px; height:20px; }
+  .landing .file-input{ display:none; }
+  .landing .meta{ font-size:12px; color: var(--ink-faint); margin-top:16px; }
+
+  .content{ display:none; flex-direction:column; gap:20px; }
+
+  .header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .header-left{ display:flex; align-items:center; gap:12px; }
+  .header-left .flag{ font-size: 28px; }
+  .header-left h1{ font-size: 18px; font-weight: 700; color: var(--ink); }
+  .header-left .sub{ font-size: 13px; color: var(--ink-soft); }
+  .header-actions{ display:flex; gap:10px; }
+  .btn-outline{
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor:pointer;
+    font-family:inherit;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--ink-soft);
+    transition: all .2s ease;
+  }
+  .btn-outline:hover{ border-color: var(--emerald); color: var(--emerald-dark); }
+  .btn-generate{
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor:pointer;
+    font-family:inherit;
+    border:none;
+    background: var(--emerald);
+    color: #fff;
+    transition: background .2s ease;
+  }
+  .btn-generate:hover{ background: var(--emerald-dark); }
+
+  /* === CLOCK === */
+  .clock-grid{
+    display:grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow-sm);
+    align-items:center;
+  }
+  .clock-block{ text-align:center; }
+  .clock-block .label{
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+  }
+  .clock-block .time{
+    font-family: var(--font-num);
+    font-variant-numeric: tabular-nums;
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .clock-block .date{
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .clock-block .tz{
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .clock-block .tz .pill{
+    background: var(--emerald-tint);
+    color: var(--emerald-dark);
+    padding: 1px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 10px;
+  }
+  .clock-divider{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    color: var(--ink-faint);
+    font-size: 18px;
+  }
+  .clock-divider .line{
+    width:2px;
+    height:24px;
+    background: var(--border);
+  }
+
+  .clock-offset{
+    grid-column: 1 / -1;
+    text-align:center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .clock-offset strong{ color: var(--ink); font-weight: 600; }
+
+  /* Clock only ships in the final generated file, not in the builder tool */
+  #clockGrid{ display:none; }
+  html.is-final #clockGrid{ display:grid; }
+
+  @media (max-width: 650px){
+    .clock-grid{ grid-template-columns:1fr; gap:10px; }
+    .clock-divider{ flex-direction:row; }
+    .clock-divider .line{ width:60px; height:2px; }
+    .clock-block .time{ font-size: 28px; }
+  }
+
+  /* === STATUS STRIP (open/closed + hours, always visible, top of page) === */
+  .status-strip{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 16px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .status-strip-status{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 7px 16px 7px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .status-pill .dot{ width:9px; height:9px; border-radius:50%; }
+  .status-pill.open{ background: var(--open-tint); color: var(--open); }
+  .status-pill.open .dot{ background: var(--open); box-shadow: 0 0 0 4px var(--open-tint); }
+  .status-pill.closed{ background: var(--closed-tint); color: var(--closed); }
+  .status-pill.closed .dot{ background: var(--closed); box-shadow: 0 0 0 4px var(--closed-tint); }
+  .status-countdown{
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight:600;
+  }
+  .status-strip-hours{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .hour-block{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    line-height:1.3;
+  }
+  .hour-block .hour-label{
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  .hour-block .hour-value{
+    font-family: var(--font-num);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .hour-sep{ color: var(--ink-faint); font-size: 14px; }
+
+  .warning-line{
+    display:none;
+    align-items:center;
+    gap:8px;
+    background: var(--warn-tint);
+    color: var(--warn-dark, #8a5a12);
+    border-radius: var(--radius-md);
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .warning-line.show{ display:flex; }
+
+  @media (max-width: 560px){
+    .status-strip{ justify-content:flex-start; }
+    .status-strip-hours{ width:100%; justify-content:space-between; }
+  }
+
+  /* === AGENCIES GRID: 3 por fila === */
+  .agencies-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px){
+    .agencies-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px){
+    .agencies-grid{ grid-template-columns: 1fr; }
+  }
+
+  .agency-group{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 14px 12px;
+    box-shadow: var(--shadow-sm);
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+  }
+  .agency-title{
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--emerald-dark);
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--emerald-tint);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .agency-title::before{
+    content:"";
+    width:10px; height:10px; border-radius:50%;
+    background: var(--gold);
+    flex-shrink:0;
+  }
+
+  .guard-cards{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+  }
+
+  .guard-card{
+    background: var(--bg);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:10px 12px 8px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    border-left:4px solid var(--border);
+  }
+  .guard-card.cat-transaction{ border-left-color:var(--emerald); }
+  .guard-card.cat-location{ border-left-color:var(--gold); }
+
+  .guard-cat{
+    display:inline-flex;
+    align-self:flex-start;
+    font-size:9px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--emerald-dark);
+    background:var(--emerald-tint);
+    padding:1px 8px;
+    border-radius:999px;
+  }
+  .guard-cat.cat-location{ background:var(--gold-tint); color:var(--gold-dark); }
+
+  .guard-name{
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1.2;
+  }
+  .guard-name.small{ font-size:13px; }
+  .guard-empty{
+    font-size:12px;
+    color:var(--ink-faint);
+    font-style:italic;
+  }
+  .guard-state{ display:flex; flex-direction:column; gap:4px; margin-top:auto; padding-top:2px; }
+
+  .phone-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--ink-soft);
+    font-size:13px;
+    background:#fff;
+    border-radius:var(--radius-sm);
+    padding:4px 10px;
+  }
+  .phone-row svg{ width:14px; height:14px; color:var(--emerald); flex-shrink:0; }
+  .phone-num{
+    font-variant-numeric:tabular-nums;
+    font-weight:600;
+    color:var(--ink);
+    font-family:var(--font-num);
+    letter-spacing:0.3px;
+  }
+
+  /* === CASCADE / CHECKLIST === */
+  .call-log{ display:flex; flex-direction:column; gap:3px; }
+  .call-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .call-check{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0;
+    background:var(--open); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px;
+  }
+  .call-active{ display:flex; flex-direction:column; gap:4px; }
+  .attempt-label{
+    font-size:9px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--ink-faint);
+  }
+  .attempt-label.is-backup{ color:var(--gold-dark); }
+  .btn-copy{
+    align-self:stretch;
+    text-align:center;
+    background:var(--emerald-tint);
+    color:var(--emerald-dark);
+    border:1px solid transparent;
+    border-radius:999px;
+    padding:4px 8px;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .2s ease, color .2s ease;
+  }
+  .btn-copy:hover{ background:var(--emerald); color:#fff; }
+  .btn-copy.copied{ background:var(--open); color:#fff; }
+  .link-reset{
+    font-size:11px;
+    font-weight:600;
+    text-decoration:none;
+    cursor:pointer;
+    color:var(--ink-faint);
+    align-self:flex-start;
+  }
+  .link-reset:hover{ text-decoration:underline; }
+
+  .no-schedule{
+    background:var(--warn-tint);
+    color:var(--warn);
+    border-radius:var(--radius-md);
+    padding:14px 18px;
+    font-size:13.5px;
+    font-weight:600;
+    text-align:center;
+  }
+
+  .astreintes-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .astreintes-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:16px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .astreintes-title svg{ width:20px; height:20px; color:var(--emerald); }
+
+  .search-box{
+    position:relative;
+    display:flex;
+    align-items:center;
+    min-width: 220px;
+  }
+  .search-box svg{
+    position:absolute;
+    left:12px;
+    width:16px; height:16px;
+    color: var(--ink-faint);
+    pointer-events:none;
+  }
+  .search-box input{
+    width:100%;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--ink);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:9px 34px 9px 34px;
+    outline:none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-box input:focus{
+    border-color: var(--emerald);
+    box-shadow: 0 0 0 3px var(--emerald-tint);
+  }
+  .search-box .clear-search{
+    position:absolute;
+    right:8px;
+    width:20px; height:20px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    border:none;
+    background:var(--bg);
+    color:var(--ink-soft);
+    border-radius:50%;
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+  }
+  .search-box.has-value .clear-search{ display:flex; }
+  .agency-group.is-filtered-out{ display:none; }
+  .no-results{
+    text-align:center;
+    padding: 20px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    display:none;
+  }
+  .no-results.show{ display:block; }
+
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:var(--ink-faint);
+    padding-top:8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LANDING -->
+  <div class="landing" id="landing">
+    <div class="icon">📋</div>
+    <h1>Générateur d'astreintes</h1>
+    <p>Chargez le fichier Excel des gardes pour générer<br>le tableau des astreintes du jour en Guyane.</p>
+    <button class="btn" id="loadBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Choisir le fichier Excel
+    </button>
+    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+    <div class="meta" id="meta">Aucun fichier chargé</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <div class="header">
+      <div class="header-left">
+        <span class="flag">🇬🇫</span>
+        <div>
+          <h1>Astreintes Guyane</h1>
+          <div class="sub" id="headerMeta">—</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-outline" id="reloadBtn">📂 Changer le fichier</button>
+        <button class="btn-generate" id="generateBtn">📥 Télécharger HTML</button>
+      </div>
+    </div>
+
+    <!-- STATUT RAPIDE : ouvert/fermé + horaires côte à côte -->
+    <div class="status-strip">
+      <div class="status-strip-status">
+        <span class="status-pill" id="statusPill"><span class="dot"></span><span id="statusPillText">—</span></span>
+        <span class="status-countdown" id="statusCountdown">—</span>
+      </div>
+      <div class="status-strip-hours">
+        <div class="hour-block">
+          <span class="hour-label">Ouverture</span>
+          <span class="hour-value">08:00</span>
+        </div>
+        <span class="hour-sep">→</span>
+        <div class="hour-block">
+          <span class="hour-label">Fermeture</span>
+          <span class="hour-value">18:00</span>
+        </div>
+      </div>
+    </div>
+    <div class="warning-line" id="warningBanner">⚠️ Fermeture imminente</div>
+
+    <!-- HORLOGE (uniquement dans le fichier final généré) -->
+    <div class="clock-grid" id="clockGrid">
+      <div class="clock-block">
+        <div class="label">⏱ Agent</div>
+        <div class="time" id="agentTime">--:--</div>
+        <div class="date" id="agentDate">—</div>
+        <div class="tz">Fuseau <span class="pill" id="agentTz">—</span></div>
+      </div>
+      <div class="clock-divider">
+        <span>➜</span>
+        <div class="line"></div>
+      </div>
+      <div class="clock-block">
+        <div class="label">🇬🇫 Guyane</div>
+        <div class="time" id="guyaneTime">--:--</div>
+        <div class="date" id="guyaneDate">—</div>
+        <div class="tz">Fuseau <span class="pill">America/Cayenne</span></div>
+      </div>
+      <div class="clock-offset">
+        Décalage agent → Guyane : <strong id="offsetValue">—</strong>
+      </div>
+    </div>
+
+    <!-- ASTREINTES -->
+    <section class="astreintes-section">
+      <div class="astreintes-header">
+        <div class="astreintes-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Astreintes du jour
+        </div>
+        <div class="search-box" id="searchBox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="agencySearch" placeholder="Rechercher une agence…" autocomplete="off">
+          <button type="button" class="clear-search" id="clearSearch" aria-label="Effacer">✕</button>
+        </div>
+      </div>
+
+      <div class="no-schedule" id="noSchedule" style="display:none">
+        Aucune astreinte prévue pour aujourd'hui.
+      </div>
+
+      <div id="groups" class="agencies-grid"></div>
+      <div class="no-results" id="noResults">Aucune agence ne correspond à « <span id="noResultsTerm"></span> ».</div>
+    </section>
+
+    <footer>Mise à jour automatique · Fuseau client : America/Cayenne</footer>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const GUYANE_TZ = "America/Cayenne";
+  const OPEN_MINUTES = 8 * 60;
+  const CLOSE_MINUTES = 18 * 60;
+  const WARNING_WINDOW_MIN = 30;
+  const agentTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const DAYS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+  const MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  const el = {
+    agentTime: document.getElementById("agentTime"),
+    agentDate: document.getElementById("agentDate"),
+    agentTz: document.getElementById("agentTz"),
+    guyaneTime: document.getElementById("guyaneTime"),
+    guyaneDate: document.getElementById("guyaneDate"),
+    statusPill: document.getElementById("statusPill"),
+    statusPillText: document.getElementById("statusPillText"),
+    statusCountdown: document.getElementById("statusCountdown"),
+    warningBanner: document.getElementById("warningBanner"),
+    offsetValue: document.getElementById("offsetValue"),
+    headerMeta: document.getElementById("headerMeta"),
+    meta: document.getElementById("meta"),
+  };
+
+  el.agentTz.textContent = agentTz;
+
+  function getPartsInZone(date, timeZone){
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone, hourCycle: "h23",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      weekday: "short"
+    });
+    const parts = dtf.formatToParts(date);
+    const map = {};
+    for(const p of parts) map[p.type] = p.value;
+    const weekdayIndex = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 }[map.weekday];
+    return {
+      hour: parseInt(map.hour, 10),
+      minute: parseInt(map.minute, 10),
+      second: parseInt(map.second, 10),
+      day: parseInt(map.day, 10),
+      month: parseInt(map.month, 10) - 1,
+      year: parseInt(map.year, 10),
+      weekday: weekdayIndex
+    };
+  }
+
+  function getOffsetMinutes(date, timeZone){
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone, hourCycle: "h23",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    });
+    const parts = dtf.formatToParts(date);
+    const map = {};
+    for(const p of parts) map[p.type] = p.value;
+    const asUTC = Date.UTC(
+      parseInt(map.year,10), parseInt(map.month,10)-1, parseInt(map.day,10),
+      parseInt(map.hour,10), parseInt(map.minute,10), parseInt(map.second,10)
+    );
+    return (asUTC - date.getTime()) / 60000;
+  }
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+
+  function formatDate(p){
+    return `${DAYS[p.weekday]} ${p.day} ${MONTHS[p.month]} ${p.year}`;
+  }
+
+  function tick(){
+    const now = new Date();
+    const agentP = getPartsInZone(now, agentTz);
+    const guyaneP = getPartsInZone(now, GUYANE_TZ);
+
+    el.agentTime.textContent = `${pad(agentP.hour)}:${pad(agentP.minute)}`;
+    el.agentDate.textContent = formatDate(agentP);
+    el.guyaneTime.textContent = `${pad(guyaneP.hour)}:${pad(guyaneP.minute)}`;
+    el.guyaneDate.textContent = formatDate(guyaneP);
+
+    const guyaneMinutesOfDay = guyaneP.hour * 60 + guyaneP.minute;
+    const isOpen = guyaneMinutesOfDay >= OPEN_MINUTES && guyaneMinutesOfDay < CLOSE_MINUTES;
+    el.statusPill.className = "status-pill " + (isOpen ? "open" : "closed");
+    el.statusPillText.textContent = isOpen ? "OUVERT" : "FERMÉ";
+
+    const agentOffset = getOffsetMinutes(now, agentTz);
+    const guyaneOffset = getOffsetMinutes(now, GUYANE_TZ);
+    const diffMin = Math.round(guyaneOffset - agentOffset);
+    const diffHours = diffMin / 60;
+    let offsetLabel = diffMin === 0 ? "Identique" : (diffHours > 0 ? "+" : "") + diffHours.toFixed(1) + "h";
+    el.offsetValue.textContent = offsetLabel;
+
+    let minutesRemaining;
+    let countdownPrefix;
+    if(isOpen){
+      minutesRemaining = CLOSE_MINUTES - guyaneMinutesOfDay;
+      countdownPrefix = "Ferme dans ";
+    } else {
+      minutesRemaining = guyaneMinutesOfDay < OPEN_MINUTES
+        ? OPEN_MINUTES - guyaneMinutesOfDay
+        : (24 * 60 - guyaneMinutesOfDay) + OPEN_MINUTES;
+      countdownPrefix = "Ouvre dans ";
+    }
+    const hoursLeft = Math.floor(minutesRemaining / 60);
+    const minsLeft = minutesRemaining % 60;
+    const bits = [];
+    if(hoursLeft > 0) bits.push(`${hoursLeft}h`);
+    bits.push(`${minsLeft}min`);
+    el.statusCountdown.textContent = countdownPrefix + bits.join(" ");
+
+    const imminent = isOpen && minutesRemaining <= WARNING_WINDOW_MIN;
+    el.warningBanner.className = "warning-line" + (imminent ? " show" : "");
+  }
+
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js">
+</script>
+
+<script data-role="astreintes-app">
+(function(){
+  "use strict";
+
+  const GUYANE_TZ = "America/Cayenne";
+  const STORAGE_KEY = "orpi_astreintes_v8";
+
+  const els = {
+    landing: document.getElementById("landing"),
+    content: document.getElementById("content"),
+    loadBtn: document.getElementById("loadBtn"),
+    fileInput: document.getElementById("fileInput"),
+    reloadBtn: document.getElementById("reloadBtn"),
+    generateBtn: document.getElementById("generateBtn"),
+    meta: document.getElementById("meta"),
+    headerMeta: document.getElementById("headerMeta"),
+    noSchedule: document.getElementById("noSchedule"),
+    groups: document.getElementById("groups"),
+    searchBox: document.getElementById("searchBox"),
+    agencySearch: document.getElementById("agencySearch"),
+    clearSearch: document.getElementById("clearSearch"),
+    noResults: document.getElementById("noResults"),
+    noResultsTerm: document.getElementById("noResultsTerm"),
+  };
+
+  let DATA = null;
+  let lastRenderedDate = null;
+  let currentTodayISO = null;
+  let searchTerm = "";
+
+  function normalizeText(str){
+    return (str || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function applySearchFilter(){
+    const term = normalizeText(searchTerm);
+    const groupEls = els.groups.querySelectorAll(".agency-group");
+    let visibleCount = 0;
+
+    groupEls.forEach(function(g){
+      const agencyName = normalizeText(g.getAttribute("data-agency"));
+      const matches = !term || agencyName.includes(term);
+      g.classList.toggle("is-filtered-out", !matches);
+      if(matches) visibleCount++;
+    });
+
+    const hasGroups = groupEls.length > 0;
+    if(hasGroups && term && visibleCount === 0){
+      els.noResultsTerm.textContent = searchTerm;
+      els.noResults.classList.add("show");
+    } else {
+      els.noResults.classList.remove("show");
+    }
+
+    els.searchBox.classList.toggle("has-value", !!searchTerm);
+  }
+
+  function todayISOInCayenne(){
+    return new Intl.DateTimeFormat("en-CA", { timeZone: GUYANE_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  }
+
+  function formatPhone(num){
+    if(!num) return "";
+    const cleaned = num.replace(/[\s\-\(\)\.]/g, "");
+    if(cleaned.length === 10) return "+594" + cleaned;
+    if(cleaned.length === 9) return "+594" + cleaned;
+    return "+594" + cleaned;
+  }
+
+  function copyText(text, onDone){
+    function fallback(){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { document.execCommand("copy"); } catch(e){}
+      document.body.removeChild(ta);
+      if(onDone) onDone();
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => { if(onDone) onDone(); }).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function parsePersonCell(raw){
+    const txt = (raw || "").toString().replace(/\r/g, "").trim();
+    if(!txt) return null;
+    if(/aucune astreinte/i.test(txt)) return { none: true };
+    const parts = txt.split("\n").map(s => s.trim()).filter(Boolean);
+    return { name: parts[0] || "", phone: parts[1] || "" };
+  }
+
+  function parseSchedule(wb){
+    const weeks = [];
+    const sheetNames = wb.SheetNames.filter(n => /^S\d+$/.test(n))
+      .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+    sheetNames.forEach(name => {
+      const ws = wb.Sheets[name];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+      if(!rows.length) return;
+
+      const title = (rows[0] && rows[0][0]) ? rows[0][0].toString() : "";
+      const yearMatch = title.match(/(20\d{2})/);
+      const year = yearMatch ? yearMatch[1] : String(new Date().getFullYear());
+
+      let headerIdx = -1;
+      for(let i = 0; i < rows.length; i++){
+        if((rows[i][0] || "").toString().trim() === "Agence"){ headerIdx = i; break; }
+      }
+      if(headerIdx === -1) return;
+
+      const headerRow = rows[headerIdx];
+      const dayCols = [];
+      for(let c = 2; c < headerRow.length; c++){
+        const cell = (headerRow[c] || "").toString().trim();
+        const m = cell.match(/(\d{2})\/(\d{2})/);
+        if(m) dayCols.push({ colIndex: c, iso: `${year}-${m[2]}-${m[1]}`, label: cell });
+      }
+
+      let currentAgence = "";
+      const lines = [];
+      for(let r = headerIdx + 1; r < rows.length; r++){
+        const row = rows[r];
+        const c0 = (row[0] || "").toString().trim();
+        const c1 = (row[1] || "").toString().trim();
+        if(!c0 && !c1) break;
+        if(/^points à vérifier/i.test(c0)) break;
+        if(c0) currentAgence = c0;
+        if(!c1) continue;
+        const perDay = {};
+        dayCols.forEach(dc => { perDay[dc.iso] = parsePersonCell(row[dc.colIndex]); });
+        lines.push({ agence: currentAgence, categorie: c1, perDay });
+      }
+      weeks.push({ id: name, title, dayCols, lines });
+    });
+
+    return weeks;
+  }
+
+  function parseCascades(wb){
+    const result = { Transaction: {}, Location: {} };
+    [["Cascade Transaction", "Transaction"], ["Cascade Location", "Location"]].forEach(function(pair){
+      const sheetName = pair[0], key = pair[1];
+      if(wb.SheetNames.indexOf(sheetName) === -1) return;
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+      let currentWeek = null;
+      let inTable = false;
+      rows.forEach(row => {
+        const c0 = (row[0] || "").toString().trim();
+        const weekMatch = c0.match(/^S(\d+)\b/);
+        if(weekMatch && /semaine/i.test(c0)){
+          currentWeek = "S" + weekMatch[1];
+          result[key][currentWeek] = [];
+          inTable = false;
+          return;
+        }
+        if(c0 === "Ordre"){ inTable = true; return; }
+        if(inTable){
+          if(!c0){ inTable = false; return; }
+          if(currentWeek){
+            result[key][currentWeek].push({
+              ordre: c0,
+              nom: (row[1] || "").toString().trim(),
+              agence: (row[2] || "").toString().trim(),
+              telephone: (row[3] || "").toString().trim(),
+              email: (row[4] || "").toString().trim(),
+              autre: (row[5] || "").toString().trim()
+            });
+          }
+        }
+      });
+    });
+    return result;
+  }
+
+  function cascadeTypeForCategory(cat){
+    const c = (cat || "").toLowerCase();
+    if(c.indexOf("transac") !== -1) return "Transaction";
+    if(c.indexOf("location") !== -1) return "Location";
+    return "Transaction";
+  }
+
+  function findTodayEntries(weeks, iso){
+    for(let i = 0; i < weeks.length; i++){
+      const week = weeks[i];
+      if(week.dayCols.some(dc => dc.iso === iso)) return { week: week, iso: iso };
+    }
+    return null;
+  }
+
+  function showContent(show){
+    if(els.landing) els.landing.style.display = show ? "none" : "flex";
+    if(els.content) els.content.style.display = show ? "flex" : "none";
+  }
+
+  function updateMeta(fileName){
+    const d = new Date();
+    const stamp = d.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const msg = fileName ? `Planning : ${fileName} · ${stamp}` : "Aucun fichier chargé";
+    if(els.meta) els.meta.textContent = msg;
+    if(els.headerMeta) els.headerMeta.textContent = fileName ? `${fileName} · ${stamp}` : "Aucun fichier";
+  }
+
+  function phoneIconSVG(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>';
+  }
+
+  function flashCopied(btn){
+    const original = btn.textContent;
+    btn.textContent = "Copié ✓";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1400);
+  }
+
+  function checkGlyph(){ return '<span class="call-check">✓</span>'; }
+
+  function buildCard(line, weekId){
+    const cascadeType = cascadeTypeForCategory(line.categorie);
+    const catClass = cascadeType === "Location" ? "cat-location" : "cat-transaction";
+
+    const card = document.createElement("div");
+    card.className = "guard-card " + catClass;
+
+    const catRow = document.createElement("div");
+    catRow.className = "guard-cat " + catClass;
+    catRow.textContent = line.categorie;
+    card.appendChild(catRow);
+
+    const person = line.perDay[currentTodayISO];
+
+    if(!person || person.none){
+      const empty = document.createElement("div");
+      empty.className = "guard-empty";
+      empty.textContent = "Aucune astreinte pour aujourd'hui.";
+      card.appendChild(empty);
+      return card;
+    }
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "guard-name";
+    nameEl.textContent = person.name;
+    card.appendChild(nameEl);
+
+    const stateBox = document.createElement("div");
+    stateBox.className = "guard-state";
+    card.appendChild(stateBox);
+
+    const cascadeList = (DATA.cascades[cascadeType] && DATA.cascades[cascadeType][weekId]) || [];
+    const hasBackups = cascadeList.length > 0;
+
+    // === CASCADE SEQUENCE ===
+    const seq = [
+      { kind: "primary", label: "1er appel", name: person.name, phone: person.phone },
+      { kind: "primary", label: "2e appel", name: person.name, phone: person.phone }
+    ];
+    cascadeList.forEach(function(entry){
+      if(entry.nom !== person.name){
+        seq.push({ kind: "backup", label: "Remplaçant", name: entry.nom, phone: entry.telephone });
+      }
+    });
+    let backupN = 0;
+    seq.forEach(function(item){
+      if(item.kind === "backup"){ backupN++; item.label = "Remplaçant " + backupN; }
+    });
+
+    let doneCount = 0;
+
+    function renderState(){
+      stateBox.innerHTML = "";
+
+      if(doneCount > 0){
+        const log = document.createElement("div");
+        log.className = "call-log";
+        for(let i = 0; i < doneCount; i++){
+          const item = seq[i];
+          const row = document.createElement("div");
+          row.className = "call-item";
+          const text = item.kind === "primary" ? item.label : (item.label + " — " + item.name);
+          row.innerHTML = checkGlyph() + '<span class="call-item-text">' + text + "</span>";
+          log.appendChild(row);
+        }
+        stateBox.appendChild(log);
+      }
+
+      if(doneCount < seq.length){
+        const item = seq[doneCount];
+        const active = document.createElement("div");
+        active.className = "call-active" + (item.kind === "backup" ? " is-backup" : "");
+
+        const label = document.createElement("div");
+        label.className = "attempt-label" + (item.kind === "backup" ? " is-backup" : "");
+        label.textContent = item.label;
+        active.appendChild(label);
+
+        if(item.kind === "backup"){
+          const nm = document.createElement("div");
+          nm.className = "guard-name small";
+          nm.textContent = item.name;
+          active.appendChild(nm);
+        }
+
+        const row = document.createElement("div");
+        row.className = "phone-row";
+        const formatted = formatPhone(item.phone);
+        row.innerHTML = phoneIconSVG() + '<span class="phone-num">' + (formatted || "—") + "</span>";
+        active.appendChild(row);
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn-copy";
+        btn.textContent = "Copier le numéro";
+        btn.onclick = function(){
+          copyText(formatted, function(){
+            flashCopied(btn);
+            setTimeout(function(){ doneCount++; renderState(); }, 500);
+          });
+        };
+        active.appendChild(btn);
+
+        stateBox.appendChild(active);
+      } else {
+        const none = document.createElement("div");
+        none.className = "guard-empty";
+        none.textContent = hasBackups ? "Fin de la liste de secours." : "Liste de secours indisponible.";
+        stateBox.appendChild(none);
+      }
+
+      if(doneCount > 0){
+        const reset = document.createElement("a");
+        reset.className = "link-reset";
+        reset.href = "#";
+        reset.textContent = "↺ Recommencer";
+        reset.onclick = function(e){ e.preventDefault(); doneCount = 0; renderState(); };
+        stateBox.appendChild(reset);
+      }
+    }
+
+    renderState();
+    return card;
+  }
+
+  function renderCards(){
+    currentTodayISO = todayISOInCayenne();
+    els.groups.innerHTML = "";
+    els.noResults.classList.remove("show");
+
+    if(!DATA){
+      els.noSchedule.style.display = "none";
+      lastRenderedDate = currentTodayISO;
+      return;
+    }
+
+    const found = findTodayEntries(DATA.weeks, currentTodayISO);
+    if(!found){
+      els.noSchedule.style.display = "block";
+      lastRenderedDate = currentTodayISO;
+      return;
+    }
+    els.noSchedule.style.display = "none";
+
+    const groups = [];
+    found.week.lines.forEach(line => {
+      let g = groups[groups.length - 1];
+      if(!g || g.agence !== line.agence){
+        g = { agence: line.agence, lines: [] };
+        groups.push(g);
+      }
+      g.lines.push(line);
+    });
+
+    groups.forEach(g => {
+      const groupEl = document.createElement("div");
+      groupEl.className = "agency-group";
+      groupEl.setAttribute("data-agency", g.agence);
+
+      const title = document.createElement("div");
+      title.className = "agency-title";
+      title.textContent = g.agence;
+      groupEl.appendChild(title);
+
+      const cardsContainer = document.createElement("div");
+      cardsContainer.className = "guard-cards";
+
+      g.lines.forEach(line => {
+        cardsContainer.appendChild(buildCard(line, found.week.id));
+      });
+
+      groupEl.appendChild(cardsContainer);
+      els.groups.appendChild(groupEl);
+    });
+
+    lastRenderedDate = currentTodayISO;
+    applySearchFilter();
+  }
+
+  function saveToStorage(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA)); }
+    catch(e){}
+  }
+
+  function loadFromStorage(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) DATA = JSON.parse(raw);
+    } catch(e){ DATA = null; }
+  }
+
+  function handleFile(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+        const weeks = parseSchedule(wb);
+        const cascades = parseCascades(wb);
+        DATA = { weeks: weeks, cascades: cascades, meta: { fileName: file.name, loadedAt: new Date().toISOString() } };
+        saveToStorage();
+        showContent(true);
+        updateMeta(file.name);
+        renderCards();
+      } catch(err){
+        alert("Erreur : " + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function generateStandaloneHTML(){
+    if(!DATA){ return; }
+    try{
+      const clone = document.documentElement.cloneNode(true);
+      clone.classList.add("is-final");
+
+      // SUPPRIMER los elementos de carga (landing + botones)
+      const landing = clone.querySelector("#landing");
+      if(landing && landing.parentNode) landing.parentNode.removeChild(landing);
+
+      const reloadBtn = clone.querySelector("#reloadBtn");
+      if(reloadBtn && reloadBtn.parentNode) reloadBtn.parentNode.removeChild(reloadBtn);
+
+      const generateBtn = clone.querySelector("#generateBtn");
+      if(generateBtn && generateBtn.parentNode) generateBtn.parentNode.removeChild(generateBtn);
+
+      // SUPPRIMER solo SheetJS (CDN)
+      const scripts = clone.querySelectorAll('script');
+      scripts.forEach(function(s){
+        if(s.src && s.src.includes('sheetjs')) {
+          if(s.parentNode) s.parentNode.removeChild(s);
+        }
+      });
+
+      // CONSERVAR el script de la aplicación (data-role="astreintes-app")
+      // Incluir los datos ANTES del script de la aplicación
+      const dataScript = document.createElement("script");
+      dataScript.textContent = "window.__ASTREINTES_DATA__ = " + JSON.stringify(DATA) + ";";
+      
+      const appScript = clone.querySelector('script[data-role="astreintes-app"]');
+      if(appScript && appScript.parentNode) {
+        appScript.parentNode.insertBefore(dataScript, appScript);
+      }
+
+      const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const safeName = (DATA.meta.fileName || "planning").replace(/\.[^.]+$/, "").replace(/[^a-z0-9_\-]+/gi, "_") || "planning";
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "astreintes-" + safeName + ".html";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    } catch(err){
+      alert("Erreur : " + err.message);
+    }
+  }
+
+  // Events (les boutons de chargement n'existent pas dans le fichier généré → on protège chaque liaison)
+  if(els.loadBtn){
+    els.loadBtn.addEventListener("click", function(){ if(els.fileInput) els.fileInput.click(); });
+  }
+  if(els.fileInput){
+    els.fileInput.addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      e.target.value = "";
+    });
+  }
+  if(els.reloadBtn){
+    els.reloadBtn.addEventListener("click", function(){
+      showContent(false);
+      updateMeta(null);
+      DATA = null;
+      if(els.fileInput) els.fileInput.click();
+    });
+  }
+  if(els.generateBtn){
+    els.generateBtn.addEventListener("click", generateStandaloneHTML);
+  }
+  if(els.agencySearch){
+    els.agencySearch.addEventListener("input", function(e){
+      searchTerm = e.target.value;
+      applySearchFilter();
+    });
+  }
+  if(els.clearSearch){
+    els.clearSearch.addEventListener("click", function(){
+      searchTerm = "";
+      if(els.agencySearch) els.agencySearch.value = "";
+      applySearchFilter();
+      if(els.agencySearch) els.agencySearch.focus();
+    });
+  }
+
+  // Init
+  const EMBEDDED_DATA = (typeof window.__ASTREINTES_DATA__ !== "undefined") ? window.__ASTREINTES_DATA__ : null;
+  if(EMBEDDED_DATA){
+    DATA = EMBEDDED_DATA;
+    showContent(true);
+    updateMeta(DATA.meta.fileName);
+    renderCards();
+  } else {
+    loadFromStorage();
+    if(DATA){
+      showContent(true);
+      updateMeta(DATA.meta.fileName);
+      renderCards();
+    } else {
+      showContent(false);
+      updateMeta(null);
+    }
+  }
+
+  setInterval(function(){
+    const iso = todayISOInCayenne();
+    if(iso !== lastRenderedDate) renderCards();
+  }, 30000);
+
+})();
+</script>
+
+</body>
+</html>

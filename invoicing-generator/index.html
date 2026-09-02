@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Raleway:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<title>Detailed Invoice</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+/* ── CSS VARIABLES (light / dark) ──────────────────────── */
+:root {
+  --bg:#f2f0ed; --surface:#fff; --surface2:#f8f9ff; --surface3:#f2f0ed;
+  --border:#e2e6f0; --border2:#e2ddd8;
+  --text:#1a1f36; --text2:#666; --text3:#aaa;
+  --accent:#C4956A; --accent2:#a07548; --accent3:rgba(196,149,106,.12);
+  --header-bg:#fff; --panel-shadow:0 2px 16px rgba(0,0,0,.07);
+  --prog-bg:#e8ebf5; --chip-bg:rgba(196,149,106,.10);
+  --dark-btn-bg:#3D5168; --dark-btn-color:#fff;
+  --input-bg:#fff; --input-color:#444;
+  --step-done:#22c7a8; --error-bg:#fff5f5; --error-border:#f75f5f; --error-color:#c0392b;
+}
+body.dark {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --surface3:#1a1d27;
+  --border:#2d3148; --border2:#2d3148;
+  --text:#e8eaf6; --text2:#9da3c0; --text3:#5a6080;
+  --accent:#d4a574; --accent2:#c4956a; --accent3:rgba(212,165,116,.15);
+  --header-bg:#13151f; --panel-shadow:0 2px 24px rgba(0,0,0,.4);
+  --prog-bg:#1e2235; --chip-bg:rgba(212,165,116,.12);
+  --dark-btn-bg:#3d5168; --dark-btn-color:#fff;
+  --input-bg:#1e2235; --input-color:#d0d4ec;
+  --step-done:#22c7a8; --error-bg:#2a1a1a; --error-border:#c0392b; --error-color:#ff8080;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Raleway',sans-serif; background:var(--bg); min-height:100vh; transition:background .2s,color .2s; color:var(--text); }
+
+/* HEADER */
+header { background:var(--header-bg); padding:14px 36px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border2); box-shadow:0 1px 6px rgba(61,81,104,.07); justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo { width:40px; height:40px; border-radius:10px; background:#3D5168; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.header-text h1 { font-size:1.05rem; font-weight:800; letter-spacing:.03em; color:var(--text); font-family:'Raleway',sans-serif; }
+.header-text span { font-size:.72rem; color:var(--text3); font-family:'DM Mono',monospace; display:block; margin-top:1px; }
+.header-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* LANG */
+.lang-switcher { display:flex; gap:3px; background:var(--surface3); border-radius:10px; padding:4px; }
+.lang-btn { border:none; background:transparent; border-radius:7px; padding:5px 9px; font-size:.75rem; font-weight:700; font-family:'DM Mono',monospace; cursor:pointer; color:var(--text3); transition:all .15s; letter-spacing:.05em; }
+.lang-btn:hover { background:var(--surface); color:var(--accent); }
+.lang-btn.active { background:var(--surface); color:var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.08); }
+
+/* DARK TOGGLE */
+#dark-toggle { border:1.5px solid var(--border); background:var(--surface); border-radius:8px; padding:5px 10px; font-size:.82rem; cursor:pointer; color:var(--text2); transition:all .15s; line-height:1; }
+#dark-toggle:hover { border-color:var(--accent); color:var(--accent); }
+
+/* PANEL */
+.panel { display:none; max-width:640px; margin:50px auto; background:var(--surface); border-radius:16px; padding:40px 36px; box-shadow:var(--panel-shadow); position:relative; z-index:1; }
+
+/* DROP ZONE */
+#drop-zone { max-width:640px; margin:50px auto; border:2px dashed var(--accent); border-radius:16px; padding:0 30px 40px; text-align:center; cursor:pointer; background:var(--surface); transition:all .2s; box-shadow:var(--panel-shadow); position:relative; z-index:1; }
+#drop-zone.over { background:var(--accent3); border-color:var(--accent2); transform:scale(1.01); }
+#drop-zone .icon { font-size:52px; margin-bottom:16px; padding-top:40px; }
+#drop-zone h2 { font-size:1.25rem; color:var(--text); margin-bottom:8px; }
+#drop-zone p { color:var(--text2); font-size:.9rem; }
+#drop-zone .hint { margin-top:14px; display:inline-block; background:var(--accent3); color:var(--accent); border-radius:20px; padding:4px 16px; font-size:.78rem; font-weight:600; }
+#file-input { display:none; }
+
+/* FILE CHIPS */
+#file-chips { display:none; max-width:640px; margin:0 auto; background:var(--surface); border:1.5px solid var(--border); border-top:none; border-radius:0 0 16px 16px; padding:12px 16px; gap:8px; flex-wrap:wrap; position:relative; z-index:1; }
+#file-chips.visible { display:flex; }
+.file-chip { display:flex; align-items:center; gap:6px; background:var(--chip-bg); border:1.5px solid var(--accent); border-radius:20px; padding:4px 10px 4px 12px; font-size:.75rem; font-family:'DM Mono',monospace; color:var(--accent2); font-weight:600; max-width:220px; }
+.file-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text2); }
+.chip-remove { cursor:pointer; font-size:.85rem; line-height:1; color:var(--accent); flex-shrink:0; border:none; background:none; padding:0; font-weight:700; }
+.chip-remove:hover { color:var(--accent2); }
+.chip-add { display:flex; align-items:center; gap:5px; border:1.5px dashed var(--accent); border-radius:20px; padding:4px 12px; font-size:.75rem; font-family:'DM Mono',monospace; color:var(--accent); font-weight:600; cursor:pointer; background:none; transition:background .15s; }
+.chip-add:hover { background:var(--chip-bg); }
+
+/* OPTION ROWS */
+.option-row { display:flex; align-items:center; gap:12px; margin-bottom:14px; padding:12px 14px; background:var(--surface2); border-radius:10px; border:1.5px solid var(--border); flex-wrap:wrap; }
+.option-row label { font-size:.83rem; font-weight:700; color:var(--text); flex-shrink:0; min-width:70px; }
+.opt-btns { display:flex; gap:6px; flex-wrap:wrap; }
+.opt-btn { border:1.5px solid var(--border); background:var(--surface); border-radius:8px; padding:5px 14px; font-size:.82rem; font-weight:700; cursor:pointer; color:var(--text2); transition:all .15s; font-family:'DM Mono',monospace; }
+.opt-btn.active { border-color:var(--accent); background:var(--accent3); color:var(--accent); }
+.opt-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* DATE FILTER */
+.date-inputs { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.date-inputs input[type=date] { border:1.5px solid var(--border); border-radius:8px; padding:5px 10px; font-size:.82rem; font-family:'DM Mono',monospace; color:var(--input-color); background:var(--input-bg); cursor:pointer; outline:none; transition:border .15s; }
+.date-inputs input[type=date]:focus { border-color:var(--accent); }
+.date-clear { border:none; background:none; color:var(--text3); font-size:.82rem; font-weight:700; cursor:pointer; padding:0 2px; transition:color .15s; }
+.date-clear:hover { color:var(--accent); }
+
+/* FILENAME INPUT */
+.filename-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.filename-row label { font-size:.83rem; font-weight:700; color:var(--text); flex-shrink:0; }
+.filename-input-wrap { flex:1; display:flex; align-items:center; gap:0; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; background:var(--input-bg); transition:border .15s; }
+.filename-input-wrap:focus-within { border-color:var(--accent); }
+.filename-input-wrap input { flex:1; border:none; background:transparent; padding:7px 10px; font-size:.82rem; font-family:'DM Mono',monospace; color:var(--input-color); outline:none; min-width:0; }
+.filename-ext { padding:7px 10px 7px 0; font-size:.82rem; font-family:'DM Mono',monospace; color:var(--text3); background:transparent; flex-shrink:0; }
+
+/* COL PICKER */
+#col-picker h2 { font-size:1.1rem; color:var(--text); margin-bottom:6px; }
+#col-picker .sub { color:var(--text2); font-size:.83rem; margin-bottom:18px; }
+.col-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px; }
+.col-item { display:flex; align-items:center; gap:10px; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all .15s; user-select:none; position:relative; background:var(--surface); }
+.col-item:hover { border-color:var(--accent); background:var(--surface2); }
+.col-item.checked { border-color:var(--accent); background:var(--accent3); }
+.col-item input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px; cursor:pointer; flex-shrink:0; }
+.col-item .col-orig { font-size:.7rem; color:var(--text3); font-family:monospace; }
+.col-item .col-label { font-size:.85rem; color:var(--text); font-weight:600; }
+.col-tooltip { display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#1a1f36; color:#fff; font-size:.7rem; font-family:'DM Mono',monospace; border-radius:7px; padding:6px 10px; z-index:200; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.3); max-width:220px; white-space:normal; text-align:left; }
+.col-tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:#1a1f36; }
+.col-item:hover .col-tooltip { display:block; }
+.col-actions { display:flex; gap:8px; margin-bottom:20px; }
+.col-actions button { padding:5px 14px; border-radius:6px; border:1.5px solid var(--border); background:var(--surface); font-size:.78rem; cursor:pointer; color:var(--text2); transition:all .15s; font-family:inherit; }
+.col-actions button:hover { border-color:var(--accent); color:var(--accent); }
+
+/* PREVIEW TABLE */
+#preview-section { display:none; margin-top:20px; border-radius:10px; overflow:hidden; border:1.5px solid var(--border); }
+#preview-section.visible { display:block; }
+.preview-header { background:var(--surface2); padding:8px 14px; font-size:.75rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--border); }
+#preview-table { width:100%; border-collapse:collapse; font-size:.78rem; font-family:'DM Mono',monospace; }
+#preview-table th { background:var(--surface3); color:var(--text2); font-weight:600; padding:7px 10px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+#preview-table td { padding:6px 10px; color:var(--text); border-bottom:1px solid var(--border); white-space:nowrap; max-width:120px; overflow:hidden; text-overflow:ellipsis; }
+#preview-table tr:last-child td { border-bottom:none; }
+#preview-table tr:hover td { background:var(--accent3); }
+
+/* PROGRESS */
+#progress-wrap h2 { font-size:1.1rem; color:var(--text); margin-bottom:20px; text-align:center; }
+.prog-bar-bg { background:var(--prog-bg); border-radius:8px; height:10px; overflow:hidden; margin-bottom:10px; }
+.prog-bar-fill { height:100%; background:linear-gradient(90deg,var(--accent),#22c7a8); border-radius:8px; transition:width .3s; width:0%; }
+#prog-label { font-size:.82rem; color:var(--text2); margin-bottom:20px; text-align:center; }
+.step-list { text-align:left; }
+.step { display:flex; align-items:center; gap:10px; padding:7px 0; font-size:.88rem; color:var(--text3); border-bottom:1px solid var(--border); }
+.step:last-child { border-bottom:none; }
+.step .dot { width:10px; height:10px; border-radius:50%; background:var(--border); flex-shrink:0; }
+.step.done .dot { background:var(--step-done); }
+.step.done { color:var(--text); }
+.step.active .dot { background:var(--accent); animation:pulse 1s infinite; }
+.step.active { color:var(--accent); font-weight:600; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+/* RESULT */
+#result-wrap { text-align:center; }
+#result-wrap .big-icon { font-size:56px; margin-bottom:12px; }
+#result-wrap h2 { font-size:1.2rem; color:var(--text); margin-bottom:6px; }
+#result-wrap .stats { color:var(--text2); font-size:.85rem; margin-bottom:24px; }
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; text-align:left; }
+.stat-card { background:var(--surface2); border-radius:10px; padding:14px 16px; }
+.stat-card .sc-label { font-size:.73rem; color:var(--text2); font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+.stat-card .sc-value { font-size:1.5rem; font-weight:800; color:var(--text); }
+.total-cost-banner { background:linear-gradient(135deg,#3D5168,#4a6280); border-radius:12px; padding:18px 24px; margin-bottom:24px; text-align:center; color:#fff; }
+.total-cost-banner .tcb-label { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; opacity:.75; margin-bottom:6px; }
+.total-cost-banner .tcb-value { font-size:2.2rem; font-weight:900; font-family:'DM Mono',monospace; color:#fff; letter-spacing:-.02em; }
+.total-cost-banner .tcb-sub { font-size:.78rem; opacity:.65; margin-top:4px; }
+
+/* CHART */
+#chart-section { margin-bottom:24px; text-align:left; }
+.chart-title { font-size:.78rem; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.4px; margin-bottom:12px; }
+.chart-bars { display:flex; flex-direction:column; gap:7px; }
+.chart-row { display:flex; align-items:center; gap:10px; }
+.chart-label { font-size:.75rem; font-family:'DM Mono',monospace; color:var(--text); width:140px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; }
+.chart-track { flex:1; background:var(--surface2); border-radius:4px; height:18px; overflow:hidden; position:relative; border:1px solid var(--border); }
+.chart-bar { height:100%; background:linear-gradient(90deg,var(--accent),#e8b47e); border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); min-width:2px; }
+.chart-val { font-size:.72rem; font-family:'DM Mono',monospace; color:var(--text2); width:70px; flex-shrink:0; text-align:left; }
+
+/* DOWNLOAD LIST */
+.dl-list { width:100%; display:flex; flex-direction:column; gap:8px; margin-bottom:20px; text-align:left; }
+.dl-item { display:flex; align-items:center; background:var(--surface2); border-radius:10px; padding:10px 14px; font-size:.82rem; font-family:'DM Mono',monospace; gap:10px; border:1px solid var(--border); }
+.dl-item .dl-fname { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.dl-item .dl-btn { background:var(--accent); color:#fff; border:none; border-radius:7px; padding:5px 16px; font-size:.78rem; font-weight:700; cursor:pointer; font-family:'DM Mono',monospace; white-space:nowrap; flex-shrink:0; transition:background .15s; }
+.dl-item .dl-btn:hover { background:var(--accent2); }
+
+/* BUTTONS */
+.btn-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.btn { padding:10px 26px; border-radius:9px; cursor:pointer; font-size:.88rem; font-family:inherit; font-weight:600; transition:all .2s; }
+.btn-primary { background:var(--accent); color:#fff; border:1.5px solid var(--accent); }
+.btn-primary:hover { background:var(--accent2); border-color:var(--accent2); }
+.btn-secondary { background:var(--surface); color:var(--text2); border:1.5px solid var(--border); }
+.btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+.picker-btns { display:flex; gap:10px; margin-top:22px; }
+
+/* ERROR */
+#error-box { display:none; max-width:640px; margin:40px auto; background:var(--error-bg); border:1.5px solid var(--error-border); border-radius:12px; padding:20px 24px; color:var(--error-color); font-size:.88rem; position:relative; z-index:1; }
+
+/* WATERMARK */
+.app-watermark { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:0; }
+
+/* RETURN BTN */
+.return-btn-wrap { display:flex; justify-content:center; margin-top:18px; position:relative; z-index:1; }
+.return-btn { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 28px; font-size:.88rem; font-weight:700; cursor:pointer; letter-spacing:.02em; transition:background .18s,transform .12s; display:flex; align-items:center; gap:7px; }
+.return-btn:hover { background:var(--accent2); transform:translateY(-1px); }
+.return-btn:active { transform:translateY(0); }
+
+/* scrollbar dark */
+body.dark ::-webkit-scrollbar { width:6px; height:6px; }
+body.dark ::-webkit-scrollbar-track { background:var(--surface2); }
+body.dark ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* DROP ZONE ENTRANCE */
+@keyframes dzFadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+#drop-zone { animation: dzFadeUp .45s cubic-bezier(.25,.8,.25,1) both; }
+
+/* FILE COUNT BADGE on drop zone */
+.dz-file-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--accent); color:#fff;
+  border-radius:20px; padding:5px 14px;
+  font-size:.78rem; font-weight:700; font-family:'DM Mono',monospace;
+  margin-top:14px; letter-spacing:.02em;
+  animation: dzFadeUp .3s ease both;
+}
+
+/* STAT CARD VALUE pop-in */
+@keyframes statPop {
+  0%   { transform:scale(.85); opacity:0; }
+  70%  { transform:scale(1.06); }
+  100% { transform:scale(1);   opacity:1; }
+}
+.stat-card .sc-value { animation: statPop .4s cubic-bezier(.34,1.56,.64,1) both; }
+
+/* PROGRESS % inline */
+#prog-label { font-size:.82rem; color:var(--text2); margin-bottom:20px; text-align:center; font-family:'DM Mono',monospace; letter-spacing:.02em; }
+
+/* COL SEARCH */
+.col-search-wrap { margin-bottom:12px; }
+.col-search-wrap input { width:100%; border:1.5px solid var(--border); border-radius:8px; padding:7px 12px; font-size:.82rem; font-family:'DM Mono',monospace; color:var(--input-color); background:var(--input-bg); outline:none; transition:border .15s; }
+.col-search-wrap input:focus { border-color:var(--accent); }
+
+/* DRAG HANDLE */
+.drag-handle { cursor:grab; color:var(--text3); font-size:1rem; flex-shrink:0; padding-right:2px; user-select:none; }
+.drag-handle:active { cursor:grabbing; }
+.col-item.dragging { opacity:.4; border-style:dashed; }
+.col-hidden { display:none !important; }
+
+/* QUICK DATE BUTTONS */
+.qd-btn { font-size:.75rem !important; padding:4px 10px !important; }
+
+/* PICKER TOTALS (before export) */
+#picker-totals-table th { background:var(--surface3); color:var(--text2); font-weight:700; padding:8px 12px; text-align:left; border-bottom:2px solid var(--border); font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+#picker-totals-table th:not(:first-child) { text-align:right; }
+#picker-totals-table td { padding:7px 12px; border-bottom:1px solid var(--border); color:var(--text); }
+#picker-totals-table td:not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+#picker-totals-table tr:last-child td { border-bottom:none; }
+#picker-totals-table tr:hover td { background:var(--accent3); }
+#picker-totals-table .tot-total td { background:var(--surface2); font-weight:700; border-top:2px solid var(--accent); color:var(--accent); }
+
+/* TOTALS TABLE */
+#totals-table th { background:var(--surface3); color:var(--text2); font-weight:700; padding:8px 12px; text-align:left; border-bottom:2px solid var(--border); font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+#totals-table th:not(:first-child) { text-align:right; }
+#totals-table td { padding:7px 12px; border-bottom:1px solid var(--border); color:var(--text); }
+#totals-table td:not(:first-child) { text-align:right; font-variant-numeric:tabular-nums; }
+#totals-table tr:last-child td { border-bottom:none; }
+#totals-table tr:hover td { background:var(--accent3); }
+#totals-table .tot-total td { background:var(--surface2); font-weight:700; border-top:2px solid var(--accent); color:var(--accent); }
+#totals-table .tot-total td:first-child { border-radius:0 0 0 8px; }
+#totals-table .tot-total td:last-child  { border-radius:0 0 8px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">📞</div>
+    <div class="header-text">
+      <h1 id="hdr-title">Detailed Invoice</h1>
+      <span>Call Data Transformer</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <button id="dark-toggle" onclick="toggleDark()" title="Modo oscuro">🌙</button>
+    <div class="lang-switcher">
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('de')">DE</button>
+      <button class="lang-btn" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn" onclick="setLang('it')">IT</button>
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="app-watermark" aria-hidden="true"><svg style="width:min(55vw,500px);opacity:0.045;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 656.87 413.22"><defs><style>.c1{fill:#a38060}.c2{fill:#646e7e}</style></defs><g><polygon class="c1" points="289.14 134.83 271.8 170.44 227.74 81.19 154.66 272.17 119.97 272.17 208.19 41.6 220.28 10 227.28 10 242.91 41.53 289.14 134.83"/><path class="c1" d="M505.76,272.67l10.33-.08,25.9-.21-16.77-29.23-43.93-76.59c36.91-16.56,55-46.25,55-77a80.51,80.51,0,0,0-91-79.79H363.07L279,184.85l17.44,35.28,86-178.56h71.32c28.31,0,48.51,20.66,48.51,48.06-.2,31.13-21.71,49.11-57.41,49.59-11.55-.68-35,2.74-45.91,7.32A91.82,91.82,0,0,0,342.77,231v39.75h32.44V231.23S371.76,170.63,448.65,170.44Z"/><polygon class="c2" points="249.1 153.61 229.93 113.7 170.06 272.18 205.27 272.18 249.1 153.61"/><path class="c2" d="M406.11,193.22,435,272.67h36.39l-34-89.93C425.13,183.3,414.56,186.55,406.11,193.22Z"/><path class="c2" d="M417.09,129,390,57.26l-14.91,32.09-31.3,63.08-1,119.73h32.31V107.83l11.43,31.47A94.49,94.49,0,0,1,417.09,129Z"/></g></svg></div>
+
+<!-- DROP -->
+<div id="drop-zone">
+  <div class="icon">📂</div>
+  <h2 id="dz-title">Drop your Excel file here</h2>
+  <p id="dz-sub">or click to browse</p>
+  <div class="hint">.xlsx &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .xlsm</div>
+  <input type="file" id="file-input" accept=".xlsx,.xls,.xlsm" multiple>
+</div>
+<div id="file-chips"></div>
+
+<div class="return-btn-wrap" id="return-btn-wrap" style="display:none">
+  <button class="return-btn" onclick="window.parent.postMessage('nav:home','*')">&#8592; <span id="btn-volver">Back</span></button>
+</div>
+
+<!-- COLUMN PICKER -->
+<div class="panel" id="col-picker">
+  <h2 id="cp-title">Selecciona las columnas</h2>
+  <p class="sub" id="cp-sub">Las etiquetas de salida se traducen automáticamente al idioma seleccionado.</p>
+
+
+
+  <!-- OUTPUT MODE — 2+ files only -->
+  <div class="option-row" id="output-mode-row" style="display:none">
+    <label id="outmode-label">Salida:</label>
+    <div class="opt-btns">
+      <button class="opt-btn active" id="btn-mode-sep"  onclick="setOutputMode('separate')">Un Excel por archivo</button>
+      <button class="opt-btn"        id="btn-mode-comb" onclick="setOutputMode('combined')">Un solo Excel combinado</button>
+    </div>
+  </div>
+
+  <!-- VAT / IVA — only when PRICE column is selected -->
+  <div class="option-row" id="vat-row" style="display:none">
+    <label id="vat-label">IVA:</label>
+    <div class="opt-btns">
+      <button class="opt-btn active" id="btn-vat-none" onclick="setVat('none')"  id="btn-vat-none">Sin IVA</button>
+      <button class="opt-btn"        id="btn-vat-de"   onclick="setVat('de')">19% 🇩🇪🇪🇸</button>
+      <button class="opt-btn"        id="btn-vat-fr"   onclick="setVat('fr')">20% 🇫🇷</button>
+      <button class="opt-btn"        id="btn-vat-it"   onclick="setVat('it')">22% 🇮🇹</button>
+    </div>
+  </div>
+
+  <!-- DATE FILTER — CALL_START only -->
+  <div class="option-row" id="date-filter-row" style="display:none;flex-direction:column;align-items:flex-start;gap:10px;">
+    <label id="date-label">Periodo:</label>
+    <div id="quick-date-btns" class="opt-btns">
+      <button class="qd-btn opt-btn" onclick="setQuickDate('thisMonth')">Este mes</button>
+      <button class="qd-btn opt-btn" onclick="setQuickDate('lastMonth')">Mes anterior</button>
+      <button class="qd-btn opt-btn" onclick="setQuickDate('last3months')">Últimos 3 meses</button>
+      <button class="qd-btn opt-btn" onclick="setQuickDate('thisYear')">Este año</button>
+    </div>
+    <div class="date-inputs">
+      <input type="date" id="date-from">
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:.8rem">→</span>
+      <input type="date" id="date-to">
+      <button class="date-clear" onclick="clearDates()">✕</button>
+    </div>
+  </div>
+
+  <!-- FILENAME -->
+  <div class="option-row" id="filename-row">
+    <label id="fname-label">Nombre:</label>
+    <div class="filename-input-wrap">
+      <input type="text" id="fname-input" placeholder="nombre_del_archivo" maxlength="80" spellcheck="false">
+      <span class="filename-ext">.xlsx</span>
+    </div>
+  </div>
+
+  <div class="col-search-wrap">
+    <input type="text" id="col-search" placeholder="Buscar columna…" oninput="filterCols()" autocomplete="off">
+  </div>
+  <div class="col-actions">
+    <button onclick="toggleAll(true)"  id="btn-selall">✓ Seleccionar todo</button>
+    <button onclick="toggleAll(false)" id="btn-deselall">✗ Deseleccionar todo</button>
+  </div>
+  <div class="col-grid" id="col-grid"></div>
+
+  <div id="preview-section">
+    <div class="preview-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <span id="prev-header">Vista previa</span>
+      <button id="btn-preview-more" onclick="togglePreviewMore()" style="display:none;border:none;background:none;font-size:.75rem;font-family:'DM Mono',monospace;color:var(--accent);cursor:pointer;font-weight:700;padding:0 4px;">Ver más filas ▾</button>
+    </div>
+    <div style="overflow-x:auto"><table id="preview-table"></table></div>
+  </div>
+
+  <!-- PREVIEW TOTALS (before export) -->
+  <div id="picker-totals-section" style="display:none;margin-top:16px;">
+    <div class="preview-header" style="border-radius:10px 10px 0 0;">
+      <span id="preview-totals-title">Vista previa de totales</span>
+    </div>
+    <div style="overflow-x:auto;border:1.5px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">
+      <table id="picker-totals-table" style="width:100%;border-collapse:collapse;font-size:.8rem;font-family:'DM Mono',monospace;"></table>
+    </div>
+  </div>
+
+  <div class="picker-btns">
+    <button class="btn btn-primary"   onclick="runProcess()" id="btn-process">▶ Procesar archivo</button>
+    <button class="btn btn-secondary" onclick="resetApp()"   id="btn-back-picker">↩ Atrás</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="panel" id="progress-wrap">
+  <h2 id="prog-title">Procesando tu archivo…</h2>
+  <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-bar"></div></div>
+  <div id="prog-label">Iniciando…</div>
+  <div class="step-list">
+    <div class="step" id="s1"><div class="dot"></div><span id="st1">Leyendo el archivo Excel</span></div>
+    <div class="step" id="s2"><div class="dot"></div><span id="st2">Filtrando columnas</span></div>
+    <div class="step" id="s3"><div class="dot"></div><span id="st3">Aplicando filtro de fechas</span></div>
+    <div class="step" id="s4"><div class="dot"></div><span id="st4">Formateando teléfonos</span></div>
+    <div class="step" id="s5"><div class="dot"></div><span id="st5">Ordenando por nombre</span></div>
+    <div class="step" id="s6"><div class="dot"></div><span id="st6">Creando hojas por nombre</span></div>
+    <div class="step" id="s7"><div class="dot"></div><span id="st7">Añadiendo filas TOTAL</span></div>
+    <div class="step" id="s8"><div class="dot"></div><span id="st8">Construyendo hoja resumen</span></div>
+    <div class="step" id="s9"><div class="dot"></div><span id="st9">Generando archivo de salida</span></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="panel" id="result-wrap">
+  <div class="big-icon">✅</div>
+  <h2 id="res-title">¡Archivo listo!</h2>
+  <p class="stats" id="res-stats"></p>
+  <div class="total-cost-banner" id="total-cost-banner">
+    <div class="tcb-label" id="tcb-label">Coste total</div>
+    <div class="tcb-value" id="tcb-value">—</div>
+    <div class="tcb-sub"  id="tcb-sub">suma de todos los clientes</div>
+  </div>
+  <!-- MINI CHART -->
+  <div id="chart-section" style="display:none">
+    <div class="chart-title" id="chart-title">Precio por concepto</div>
+    <div class="chart-bars" id="chart-bars"></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="sc-label" id="lbl-records">Total registros</div><div class="sc-value" id="sc-records">—</div></div>
+    <div class="stat-card"><div class="sc-label" id="lbl-sheets">Nombres únicos</div><div class="sc-value" id="sc-sheets">—</div></div>
+    <div class="stat-card"><div class="sc-label" id="lbl-cols">Columnas seleccionadas</div><div class="sc-value" id="sc-cols">—</div></div>
+    <div class="stat-card"><div class="sc-label" id="lbl-phones">Teléfonos formateados</div><div class="sc-value" id="sc-phones">—</div></div>
+  </div>
+  <!-- TOTALS TABLE -->
+  <div id="totals-section" style="display:none;margin-bottom:24px;text-align:left;">
+    <div class="chart-title" id="totals-title">Resumen por concepto</div>
+    <div style="overflow-x:auto;border-radius:10px;border:1.5px solid var(--border);overflow:hidden;">
+      <table id="totals-table" style="width:100%;border-collapse:collapse;font-size:.8rem;font-family:'DM Mono',monospace;"></table>
+    </div>
+  </div>
+  <div class="dl-list" id="dl-list"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="exportPDF()" id="btn-pdf">📄 Exportar PDF</button>
+    <button class="btn btn-secondary" onclick="resetApp()" id="btn-another">↩ Procesar otro archivo</button>
+  </div>
+</div>
+
+<div id="error-box"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// I18N — ES · DE · FR · IT
+// ═══════════════════════════════════════════════════════════
+const I18N = {
+  es: {
+    hdrTitle:'Detailed Invoice',
+    dzTitle:'Suelta tu archivo Excel aquí', dzSub:'o haz clic para buscar',
+    cpTitle:'Selecciona las columnas',
+    cpSub:'Las etiquetas de salida se traducen automáticamente al idioma seleccionado.',
+    outmodeLabel:'Salida:', modeSep:'Un Excel por archivo', modeComb:'Un solo Excel combinado',
+    dateLabel:'Periodo:',
+    quickThis:'Este mes', quickLast:'Mes anterior', quickLast3:'Últimos 3 meses', quickYear:'Este año',
+    fnameLbl:'Nombre:',
+    btnSelAll:'✓ Seleccionar todo', btnDeselAll:'✗ Deseleccionar todo',
+    colSearch:'Buscar columna…',
+    prevHeader:'Vista previa',
+    btnPreviewMore:'Ver más filas ▾', btnPreviewLess:'Ver menos ▴',
+    previewTotalsTitle:'Vista previa de totales',
+    btnProcess:'▶ Procesar archivo', btnBackPicker:'↩ Atrás',
+    progTitle:'Procesando tu archivo…',
+    st:['Leyendo el archivo Excel','Filtrando columnas','Aplicando filtro de fechas','Formateando teléfonos','Ordenando por nombre','Creando hojas por nombre','Añadiendo filas TOTAL','Construyendo hoja resumen','Generando archivo de salida'],
+    progLabels:['Leyendo Excel…','Filtrando columnas…','Filtrando fechas…','Formateando teléfonos…','Ordenando…','Creando hojas…','Añadiendo totales…','Construyendo resumen…','Generando archivo…'],
+    resTitle:'¡Archivo listo!', tcbLabel:'Coste total', tcbSub:'suma de todos los clientes',
+    chartTitle:'Precio por concepto',
+    lblRecords:'Total registros', lblSheets:'Nombres únicos', lblCols:'Columnas seleccionadas', lblPhones:'Teléfonos formateados',
+    btnDl:'⬇ Descargar', btnPdf:'📄 Exportar PDF', btnAnother:'↩ Procesar otro archivo', btnVolver:'Back',
+    darkOn:'🌙', darkOff:'☀️',
+    summarySheetName:'RESUMEN', summaryColClient:'Concepto', summaryColRecords:'Registros',
+    summaryColDuration:'Duración (min)', summaryColPrice:'Precio', summaryColVatAmt:'IVA (19%)', summaryColTotalVat:'Total c/ IVA (€)', summaryTotal:'TOTAL GENERAL',
+    vatLabel:'IVA:', vatOn:'Con IVA', vatOff:'Sin IVA', vatRateLabel:'19% (Alemania)', vatRate:0.19,
+    tcbSubVat:'total con IVA incluido · 19% DE',
+    tooltipValues:'Valores: ', sheetsCreated:'hojas', filesProcessed:'archivos',
+    chipAdd:'+ Añadir',
+    combinedName:'facturas_combinadas',
+    fnamePlaceholder:'nombre_del_archivo',
+    pdfTitle:'Resumen de facturación',
+    kpiClients:'CONCEPTOS', kpiRecords:'TOTAL REGISTROS', kpiTotal:'TOTAL GENERAL', kpiDuration:'DURACIÓN TOTAL',
+    labels:{'ID':'Identificador','CALL_START':'Inicio de la llamada','CALLER_NUMBER':'Número de origen','CALLED_ACCOUNT':'ID de cliente','CALLED_NUMBER':'Número de destino','NAME':'Concepto','CALL_STATUS':'Status de salida','DURATION_MINUTES':'Duración','UNIT_PRICE':'Precio unitario','PRICE':'Precio','CONTACT_PERSON':'Llamada para'}
+  },
+  de: {
+    hdrTitle:'Detailed Invoice',
+    dzTitle:'Excel-Datei hier ablegen', dzSub:'oder klicken zum Durchsuchen',
+    cpTitle:'Spalten auswählen',
+    cpSub:'Ausgabebeschriftungen werden automatisch in die gewählte Sprache übersetzt.',
+    outmodeLabel:'Ausgabe:', modeSep:'Eine Excel pro Datei', modeComb:'Eine kombinierte Excel',
+    dateLabel:'Zeitraum:',
+    quickThis:'Diesen Monat', quickLast:'Letzter Monat', quickLast3:'Letzte 3 Monate', quickYear:'Dieses Jahr',
+    fnameLbl:'Dateiname:',
+    btnSelAll:'✓ Alle auswählen', btnDeselAll:'✗ Alle abwählen',
+    colSearch:'Spalte suchen…',
+    prevHeader:'Vorschau',
+    btnPreviewMore:'Mehr Zeilen ▾', btnPreviewLess:'Weniger ▴',
+    previewTotalsTitle:'Vorschau Summen',
+    btnProcess:'▶ Datei verarbeiten', btnBackPicker:'↩ Zurück',
+    progTitle:'Datei wird verarbeitet…',
+    st:['Excel-Datei lesen','Spalten filtern','Datumsfilter anwenden','Telefone formatieren','Nach Name sortieren','Tabellenblätter erstellen','GESAMT-Zeilen hinzufügen','Zusammenfassung erstellen','Ausgabedatei generieren'],
+    progLabels:['Lese Excel…','Filtere Spalten…','Filtere Datum…','Formatiere Telefone…','Sortiere…','Erstelle Blätter…','Füge Summen hinzu…','Erstelle Zusammenfassung…','Generiere Datei…'],
+    resTitle:'Datei bereit!', tcbLabel:'Gesamtkosten', tcbSub:'Summe aller Kunden',
+    chartTitle:'Preis pro Konzept',
+    lblRecords:'Datensätze gesamt', lblSheets:'Eindeutige Namen', lblCols:'Ausgewählte Spalten', lblPhones:'Formatierte Telefone',
+    btnDl:'⬇ Herunterladen', btnPdf:'📄 PDF exportieren', btnAnother:'↩ Weitere Datei verarbeiten', btnVolver:'Back',
+    darkOn:'🌙', darkOff:'☀️',
+    summarySheetName:'ZUSAMMENFASSUNG', summaryColClient:'Konzept', summaryColRecords:'Einträge',
+    summaryColDuration:'Dauer (Min)', summaryColPrice:'Preis', summaryColVatAmt:'MwSt. (19%)', summaryColTotalVat:'Gesamt inkl. MwSt. (€)', summaryTotal:'GESAMTSUMME',
+    vatLabel:'MwSt.:', vatOn:'Mit MwSt.', vatOff:'Ohne MwSt.', vatRateLabel:'19% (Deutschland)', vatRate:0.19,
+    tcbSubVat:'Gesamtbetrag inkl. MwSt. · 19% DE',
+    tooltipValues:'Werte: ', sheetsCreated:'Blätter', filesProcessed:'Dateien',
+    chipAdd:'+ Hinzufügen',
+    combinedName:'rechnungen_kombiniert',
+    fnamePlaceholder:'dateiname',
+    pdfTitle:'Abrechnungsübersicht',
+    kpiClients:'KONZEPTE', kpiRecords:'DATENSÄTZE GESAMT', kpiTotal:'GESAMTSUMME', kpiDuration:'GESAMTDAUER',
+    labels:{'ID':'Bezeichner','CALL_START':'Anrufbeginn','CALLER_NUMBER':'Ursprungsnummer','CALLED_ACCOUNT':'Kunden-ID','CALLED_NUMBER':'Zielnummer','NAME':'Konzept','CALL_STATUS':'Ausgangsstatus','DURATION_MINUTES':'Dauer','UNIT_PRICE':'Einzelpreis','PRICE':'Preis','CONTACT_PERSON':'Anruf für'}
+  },
+  fr: {
+    hdrTitle:'Detailed Invoice',
+    dzTitle:'Déposez votre fichier Excel ici', dzSub:'ou cliquez pour parcourir',
+    cpTitle:'Sélectionner les colonnes',
+    cpSub:'Les libellés de sortie sont traduits automatiquement dans la langue sélectionnée.',
+    outmodeLabel:'Sortie:', modeSep:'Un Excel par fichier', modeComb:'Un seul Excel combiné',
+    dateLabel:'Période:',
+    quickThis:'Ce mois', quickLast:'Mois dernier', quickLast3:'3 derniers mois', quickYear:'Cette année',
+    fnameLbl:'Nom du fichier:',
+    btnSelAll:'✓ Tout sélectionner', btnDeselAll:'✗ Tout désélectionner',
+    colSearch:'Rechercher colonne…',
+    prevHeader:'Aperçu',
+    btnPreviewMore:'Plus de lignes ▾', btnPreviewLess:'Moins ▴',
+    previewTotalsTitle:'Aperçu des totaux',
+    btnProcess:'▶ Traiter le fichier', btnBackPicker:'↩ Retour',
+    progTitle:'Traitement en cours…',
+    st:['Lecture du fichier Excel','Filtrage des colonnes','Application du filtre de dates','Formatage des téléphones','Tri par nom','Création des feuilles','Ajout des lignes TOTAL','Construction du résumé','Génération du fichier'],
+    progLabels:['Lecture Excel…','Filtrage colonnes…','Filtrage dates…','Formatage téléphones…','Tri…','Création feuilles…','Ajout totaux…','Construction résumé…','Génération fichier…'],
+    resTitle:'Fichier prêt !', tcbLabel:'Coût total', tcbSub:'somme de tous les clients',
+    chartTitle:'Prix par concept',
+    lblRecords:'Total enregistrements', lblSheets:'Noms uniques', lblCols:'Colonnes sélectionnées', lblPhones:'Téléphones formatés',
+    btnDl:'⬇ Télécharger', btnPdf:'📄 Exporter PDF', btnAnother:'↩ Traiter un autre fichier', btnVolver:'Back',
+    darkOn:'🌙', darkOff:'☀️',
+    summarySheetName:'RÉSUMÉ', summaryColClient:'Concept', summaryColRecords:'Enregistrements',
+    summaryColDuration:'Durée (min)', summaryColPrice:'Prix', summaryColVatAmt:'TVA (20%)', summaryColTotalVat:'Total TTC (€)', summaryTotal:'TOTAL GÉNÉRAL',
+    vatLabel:'TVA:', vatOn:'Avec TVA', vatOff:'Sans TVA', vatRateLabel:'20% (France)', vatRate:0.20,
+    tcbSubVat:'total toutes taxes comprises · 20% FR',
+    tooltipValues:'Valeurs : ', sheetsCreated:'feuilles', filesProcessed:'fichiers',
+    chipAdd:'+ Ajouter',
+    combinedName:'factures_combinees',
+    fnamePlaceholder:'nom_du_fichier',
+    pdfTitle:'Résumé de facturation',
+    kpiClients:'CONCEPTS', kpiRecords:'TOTAL ENREG.', kpiTotal:'TOTAL GÉNÉRAL', kpiDuration:'DURÉE TOTALE',
+    labels:{'ID':'Identifiant','CALL_START':'Début de l\'appel','CALLER_NUMBER':'Numéro d\'origine','CALLED_ACCOUNT':'ID client','CALLED_NUMBER':'Numéro de destination','NAME':'Concept','CALL_STATUS':'Statut de sortie','DURATION_MINUTES':'Durée','UNIT_PRICE':'Prix unitaire','PRICE':'Prix','CONTACT_PERSON':'Appel pour'}
+  },
+  it: {
+    hdrTitle:'Detailed Invoice',
+    dzTitle:'Trascina qui il tuo file Excel', dzSub:'o clicca per sfogliare',
+    cpTitle:'Seleziona le colonne',
+    cpSub:'Le etichette di output vengono tradotte automaticamente nella lingua selezionata.',
+    outmodeLabel:'Output:', modeSep:'Un Excel per file', modeComb:'Un solo Excel combinato',
+    dateLabel:'Periodo:',
+    quickThis:'Questo mese', quickLast:'Mese scorso', quickLast3:'Ultimi 3 mesi', quickYear:'Quest\'anno',
+    fnameLbl:'Nome file:',
+    btnSelAll:'✓ Seleziona tutto', btnDeselAll:'✗ Deseleziona tutto',
+    colSearch:'Cerca colonna…',
+    prevHeader:'Anteprima',
+    btnPreviewMore:'Più righe ▾', btnPreviewLess:'Meno ▴',
+    previewTotalsTitle:'Anteprima totali',
+    btnProcess:'▶ Elabora file', btnBackPicker:'↩ Indietro',
+    progTitle:'Elaborazione in corso…',
+    st:['Lettura del file Excel','Filtraggio delle colonne','Applicazione filtro date','Formattazione telefoni','Ordinamento per nome','Creazione fogli per nome','Aggiunta righe TOTALE','Costruzione del riepilogo','Generazione file di output'],
+    progLabels:['Lettura Excel…','Filtraggio colonne…','Filtraggio date…','Formattazione telefoni…','Ordinamento…','Creazione fogli…','Aggiunta totali…','Costruzione riepilogo…','Generazione file…'],
+    resTitle:'File pronto!', tcbLabel:'Costo totale', tcbSub:'somme di tutti i clienti',
+    chartTitle:'Prezzo per concetto',
+    lblRecords:'Record totali', lblSheets:'Nomi univoci', lblCols:'Colonne selezionate', lblPhones:'Telefoni formattati',
+    btnDl:'⬇ Scarica', btnPdf:'📄 Esporta PDF', btnAnother:'↩ Elabora un altro file', btnVolver:'Back',
+    darkOn:'🌙', darkOff:'☀️',
+    summarySheetName:'RIEPILOGO', summaryColClient:'Concetto', summaryColRecords:'Record',
+    summaryColDuration:'Durata (min)', summaryColPrice:'Prezzo', summaryColVatAmt:'IVA (22%)', summaryColTotalVat:'Totale IVA incl. (€)', summaryTotal:'TOTALE GENERALE',
+    vatLabel:'IVA:', vatOn:'Con IVA', vatOff:'Senza IVA', vatRateLabel:'22% (Italia)', vatRate:0.22,
+    tcbSubVat:'totale IVA inclusa · 22% IT',
+    tooltipValues:'Valori: ', sheetsCreated:'fogli', filesProcessed:'file',
+    chipAdd:'+ Aggiungi',
+    combinedName:'fatture_combinate',
+    fnamePlaceholder:'nome_file',
+    pdfTitle:'Riepilogo fatturazione',
+    kpiClients:'CONCETTI', kpiRecords:'RECORD TOTALI', kpiTotal:'TOTALE GENERALE', kpiDuration:'DURATA TOTALE',
+    labels:{'ID':'Identificatore','CALL_START':'Inizio chiamata','CALLER_NUMBER':'Numero di origine','CALLED_ACCOUNT':'ID cliente','CALLED_NUMBER':'Numero di destinazione','NAME':'Concetto','CALL_STATUS':'Stato di uscita','DURATION_MINUTES':'Durata','UNIT_PRICE':'Prezzo unitario','PRICE':'Prezzo','CONTACT_PERSON':'Chiamata per'}
+  },
+  en: {
+    hdrTitle:'Detailed Invoice',
+    dzTitle:'Drop your Excel file here', dzSub:'or click to browse',
+    cpTitle:'Select columns',
+    cpSub:'Output labels are automatically translated to the selected language.',
+    outmodeLabel:'Output:', modeSep:'One Excel per file', modeComb:'One combined Excel',
+    dateLabel:'Period:',
+    quickThis:'This month', quickLast:'Last month', quickLast3:'Last 3 months', quickYear:'This year',
+    fnameLbl:'Filename:',
+    btnSelAll:'✓ Select all', btnDeselAll:'✗ Deselect all',
+    colSearch:'Search column…',
+    prevHeader:'Preview',
+    btnPreviewMore:'More rows ▾', btnPreviewLess:'Fewer rows ▴',
+    previewTotalsTitle:'Totals preview',
+    btnProcess:'▶ Process file', btnBackPicker:'↩ Back',
+    progTitle:'Processing your file…',
+    st:['Reading Excel file','Filtering columns','Applying date filter','Formatting phones','Sorting by name','Creating sheets by name','Adding TOTAL rows','Building summary sheet','Generating output file'],
+    progLabels:['Reading Excel…','Filtering columns…','Filtering dates…','Formatting phones…','Sorting…','Creating sheets…','Adding totals…','Building summary…','Generating file…'],
+    resTitle:'File ready!', tcbLabel:'Total cost', tcbSub:'sum across all clients',
+    chartTitle:'Price by concept',
+    lblRecords:'Total records', lblSheets:'Unique names', lblCols:'Selected columns', lblPhones:'Formatted phones',
+    btnDl:'⬇ Download', btnPdf:'📄 Export PDF', btnAnother:'↩ Process another file', btnVolver:'Back',
+    darkOn:'🌙', darkOff:'☀️',
+    summarySheetName:'SUMMARY', summaryColClient:'Concept', summaryColRecords:'Records',
+    summaryColDuration:'Duration (min)', summaryColPrice:'Price', summaryColVatAmt:'VAT (20%)', summaryColTotalVat:'Total incl. VAT (€)', summaryTotal:'GRAND TOTAL',
+    vatLabel:'VAT:', vatOn:'With VAT', vatOff:'No VAT', vatRateLabel:'20% (standard)', vatRate:0.20,
+    tcbSubVat:'total including VAT · 20%',
+    tooltipValues:'Values: ', sheetsCreated:'sheets', filesProcessed:'files',
+    chipAdd:'+ Add',
+    combinedName:'invoices_combined',
+    fnamePlaceholder:'file_name',
+    pdfTitle:'Billing summary',
+    kpiClients:'CONCEPTS', kpiRecords:'TOTAL RECORDS', kpiTotal:'GRAND TOTAL', kpiDuration:'TOTAL DURATION',
+    labels:{'ID':'Identifier','CALL_START':'Call start','CALLER_NUMBER':'Origin number','CALLED_ACCOUNT':'Client ID','CALLED_NUMBER':'Destination number','NAME':'Concept','CALL_STATUS':'Exit status','DURATION_MINUTES':'Duration','UNIT_PRICE':'Unit price','PRICE':'Price','CONTACT_PERSON':'Call for'}
+  }
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let currentLang    = 'en';
+const currencySymbol = '€';
+let outputMode     = 'separate';
+let darkMode       = false;
+let vatEnabled     = false;
+let pendingFiles   =[];
+let outputBlobs    = [];
+let allColKeys     =[];   // current order (respects drag reorder)
+let allRawRows     =[];   // full data from loaded file (for live totals preview)
+let previewRows    = [];
+let hasCallStart   = false;
+let lastSummaryData =[];
+let previewExpanded = false;
+let dragSrcKey     = null; // for drag-to-reorder
+
+const SUM_COLS   = new Set(['DURATION_MINUTES','PRICE']);
+const PHONE_COLS = new Set(['CALLER_NUMBER','CALLED_NUMBER']);
+
+// ═══════════════════════════════════════════════════════════
+// DARK MODE
+// ═══════════════════════════════════════════════════════════
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  const t = I18N[currentLang];
+  document.getElementById('dark-toggle').textContent = darkMode ? (t.darkOff||'☀️') : (t.darkOn||'🌙');
+}
+try { if(localStorage.getItem('fdark')==='1'){darkMode=true;document.body.classList.add('dark');} } catch(e){}
+
+// ═══════════════════════════════════════════════════════════
+// LANGUAGE
+// ═══════════════════════════════════════════════════════════
+function setLang(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim().toLowerCase() === lang));
+  const t = I18N[lang];
+  const s = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  s('hdr-title',  t.hdrTitle);
+  s('dz-title',   t.dzTitle);   s('dz-sub',  t.dzSub);
+  s('cp-title',   t.cpTitle);   s('cp-sub',  t.cpSub);
+  s('outmode-label', t.outmodeLabel);
+  s('btn-mode-sep', t.modeSep); s('btn-mode-comb', t.modeComb);
+  s('date-label', t.dateLabel); s('fname-label', t.fnameLbl);
+  s('btn-selall', t.btnSelAll); s('btn-deselall', t.btnDeselAll);
+  s('prev-header',t.prevHeader);
+  s('btn-preview-more', t.btnPreviewMore);
+  s('btn-process',t.btnProcess); s('btn-back-picker', t.btnBackPicker);
+  s('prog-title', t.progTitle);
+  s('res-title',  t.resTitle);  s('tcb-label', t.tcbLabel); s('tcb-sub', t.tcbSub);
+  s('chart-title',t.chartTitle);
+  s('totals-title', t.previewTotalsTitle);
+  s('lbl-records',t.lblRecords); s('lbl-sheets',t.lblSheets);
+  s('lbl-cols',   t.lblCols);   s('lbl-phones',t.lblPhones);
+  s('btn-another',t.btnAnother); s('btn-pdf', t.btnPdf); s('btn-volver', t.btnVolver);
+  s('dark-toggle', darkMode ? (t.darkOff||'☀️') : (t.darkOn||'🌙'));
+  // VAT row labels
+  const vatLabelEl = document.getElementById('vat-label');
+  if (vatLabelEl) vatLabelEl.textContent = t.vatLabel || 'IVA:';
+  s('preview-totals-title', t.previewTotalsTitle);
+  // quick date buttons
+  const qb = document.getElementById('quick-date-btns');
+  if(qb) {
+    const btns = qb.querySelectorAll('.qd-btn');
+    if(btns[0]) btns[0].textContent = t.quickThis;
+    if(btns[1]) btns[1].textContent = t.quickLast;
+    if(btns[2]) btns[2].textContent = t.quickLast3;
+    if(btns[3]) btns[3].textContent = t.quickYear;
+  }
+  // col search placeholder
+  const cs = document.getElementById('col-search');
+  if(cs) cs.placeholder = t.colSearch;
+  t.st.forEach((txt,i) => s('st'+(i+1), txt));
+  const fi = document.getElementById('fname-input');
+  if(fi && !fi.value) fi.placeholder = t.fnamePlaceholder || 'nombre_del_archivo';
+  if(allColKeys.length) { buildColPicker(allColKeys); buildPreviewTable(allColKeys, previewRows); updateVatRowVisibility(); }
+  if(pendingFiles.length) renderChips();
+  refreshPreviewTotals();
+}
+
+// ═══════════════════════════════════════════════════════════
+// VAT / IVA
+// ═══════════════════════════════════════════════════════════
+// vatMode: 'none' | 'de' | 'fr' | 'it'
+const VAT_RATES = { none: 0, de: 0.19, fr: 0.20, it: 0.22 };
+let vatMode = 'none';
+
+function setVat(mode) {
+  vatMode = mode;
+  vatEnabled = mode !== 'none';
+  ['none','de','fr','it'].forEach(m => {
+    const btn = document.getElementById('btn-vat-' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  refreshPreviewTotals();
+}
+
+function getVatRate() {
+  return VAT_RATES[vatMode] || 0;
+}
+
+function getVatLabels() {
+  const rate = Math.round(getVatRate() * 100);
+  const pct  = rate + '%';
+  const flag = { de: '🇩🇪🇪🇸', fr: '🇫🇷', it: '🇮🇹' }[vatMode] || '';
+  const terms = {
+    es: { amt: `IVA (${pct} ${flag})`.trim(),     total: 'Total c/ IVA (€)',        sub: `total con IVA incluido · ${pct} ${flag}`.trim() },
+    de: { amt: `MwSt. (${pct} ${flag})`.trim(),   total: 'Gesamt inkl. MwSt. (€)',  sub: `Gesamtbetrag inkl. MwSt. · ${pct} ${flag}`.trim() },
+    fr: { amt: `TVA (${pct} ${flag})`.trim(),     total: 'Total TTC (€)',           sub: `total toutes taxes comprises · ${pct} ${flag}`.trim() },
+    it: { amt: `IVA (${pct} ${flag})`.trim(),     total: 'Totale IVA incl. (€)',    sub: `totale IVA inclusa · ${pct} ${flag}`.trim() },
+    en: { amt: `VAT (${pct} ${flag})`.trim(),     total: 'Total incl. VAT (€)',     sub: `total including VAT · ${pct} ${flag}`.trim() },
+  };
+  return terms[currentLang] || terms.en;
+}
+
+function updateVatRowVisibility() {
+  const priceChk = document.getElementById('chk-PRICE');
+  const hasPriceSelected = priceChk && priceChk.checked;
+  const row = document.getElementById('vat-row');
+  if (row) row.style.display = hasPriceSelected ? 'flex' : 'none';
+  if (!hasPriceSelected && vatEnabled) setVat('none');
+}
+
+// ═══════════════════════════════════════════════════════════
+// OUTPUT MODE
+// ═══════════════════════════════════════════════════════════
+function setOutputMode(mode) {
+  outputMode = mode;
+  document.getElementById('btn-mode-sep').classList.toggle('active',  mode==='separate');
+  document.getElementById('btn-mode-comb').classList.toggle('active', mode==='combined');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DATE FILTER
+// ═══════════════════════════════════════════════════════════
+function clearDates() {
+  document.getElementById('date-from').value='';
+  document.getElementById('date-to').value='';
+  refreshPreviewTotals();
+}
+function getDateFilter() {
+  return {
+    from: document.getElementById('date-from').value || null,
+    to:   document.getElementById('date-to').value   || null,
+  };
+}
+function setQuickDate(type) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  let from, to;
+  if(type==='thisMonth') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else if(type==='lastMonth') {
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), 0);
+  } else if(type==='last3months') {
+    from = new Date(now.getFullYear(), now.getMonth()-2, 1);
+    to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  } else if(type==='thisYear') {
+    from = new Date(now.getFullYear(), 0, 1);
+    to   = new Date(now.getFullYear(), 11, 31);
+  }
+  document.getElementById('date-from').value = fmt(from);
+  document.getElementById('date-to').value   = fmt(to);
+  refreshPreviewTotals();
+}
+
+// Returns 'YYYY-MM-DD' string or null
+function parseCallStartToDate(v) {
+  if(v===null||v===undefined||v==='') return null;
+  if(typeof v==='number') {
+    const serial = v >= 60 ? v - 1 : v;
+    const epoch = new Date(Date.UTC(1900,0,1) + (serial-1)*86400000);
+    if(isNaN(epoch)) return null;
+    return epoch.toISOString().slice(0,10);
+  }
+  if(v instanceof Date) {
+    if(isNaN(v)) return null;
+    const y=v.getUTCFullYear(), mo=String(v.getUTCMonth()+1).padStart(2,'0'), d=String(v.getUTCDate()).padStart(2,'0');
+    return `${y}-${mo}-${d}`;
+  }
+  const s = String(v).trim();
+  if(!s) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const dmy = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.]((19|20)\d{2})/);
+  if(dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+  const fb = new Date(s);
+  if(!isNaN(fb)) {
+    const y=fb.getFullYear(),mo=String(fb.getMonth()+1).padStart(2,'0'),d=String(fb.getDate()).padStart(2,'0');
+    return `${y}-${mo}-${d}`;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILENAME
+// ═══════════════════════════════════════════════════════════
+function getOutputName(defaultBase) {
+  const raw = document.getElementById('fname-input').value.trim();
+  const base = raw || defaultBase;
+  return base.replace(/[\/\\:\*\?"<>\|]/g,'_').replace(/\.xlsx$/i,'') + '.xlsx';
+}
+
+// ═══════════════════════════════════════════════════════════
+// DROP ZONE — multi-file
+// ═══════════════════════════════════════════════════════════
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('click', ()=>fileInput.click());
+dropZone.addEventListener('dragover',  e=>{e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e=>{e.preventDefault();dropZone.classList.remove('over');addFiles(Array.from(e.dataTransfer.files));});
+fileInput.addEventListener('change', ()=>{if(fileInput.files.length)addFiles(Array.from(fileInput.files));fileInput.value='';});
+
+function fmtBytes(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(1)+' MB';}
+
+function addFiles(files) {
+  files.forEach(f=>{ if(!pendingFiles.find(p=>p.name===f.name&&p.size===f.size)) pendingFiles.push(f); });
+  renderChips();
+  if(pendingFiles.length) loadFirstFile();
+}
+function removeFile(idx) {
+  pendingFiles.splice(idx,1);
+  renderChips();
+  if(!pendingFiles.length){
+    const b=document.getElementById('dz-file-badge');if(b)b.remove();
+    document.getElementById('col-picker').style.display='none';
+    dropZone.style.display='block';
+    allColKeys=[]; allRawRows=[]; previewRows=[]; hasCallStart=false;
+    document.getElementById('preview-section').classList.remove('visible');
+    document.getElementById('date-filter-row').style.display='none';
+    document.getElementById('output-mode-row').style.display='none';
+    document.getElementById('picker-totals-section').style.display='none';
+  } else loadFirstFile();
+}
+
+function renderChips() {
+  const c=document.getElementById('file-chips');
+  const t=I18N[currentLang];
+  // Update drop zone badge
+  const existingBadge=document.getElementById('dz-file-badge');
+  if(existingBadge) existingBadge.remove();
+  if(pendingFiles.length){
+    const badge=document.createElement('div');
+    badge.id='dz-file-badge';
+    badge.className='dz-file-badge';
+    badge.innerHTML=`✓ ${pendingFiles.length} file${pendingFiles.length>1?'s':''} loaded`;
+    document.getElementById('drop-zone').appendChild(badge);
+  }
+  if(!pendingFiles.length){c.classList.remove('visible');return;}
+  c.classList.add('visible');
+  c.innerHTML = pendingFiles.map((f,i)=>`
+    <div class="file-chip">
+      <span title="${f.name}">📄 ${f.name.length>22?f.name.slice(0,20)+'…':f.name}</span>
+      <span>${fmtBytes(f.size)}</span>
+      <button class="chip-remove" onclick="removeFile(${i})">✕</button>
+    </div>`).join('') +
+    `<button class="chip-add" onclick="document.getElementById('file-input').click()">${t.chipAdd}</button>`;
+}
+
+function showFileError(msg) {
+  const eb = document.getElementById('error-box');
+  eb.style.display = 'block';
+  eb.textContent   = '⚠️ ' + msg;
+  eb.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function loadFirstFile() {
+  if(typeof XLSX === 'undefined') {
+    showFileError('La librería XLSX no se pudo cargar. Comprueba tu conexión a internet y recarga la página.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb  = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      if(!wb.SheetNames || !wb.SheetNames.length) throw new Error('El archivo no contiene hojas.');
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const rawHeader1 = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      allColKeys   = rawHeader1[0] ? rawHeader1[0].map(h=>String(h).trim()).filter(Boolean) :[];
+      if(!allColKeys.length) throw new Error('No se encontraron columnas en la primera hoja del archivo.');
+      allRawRows   = XLSX.utils.sheet_to_json(ws, {defval:''});
+      previewRows  = rawHeader1.slice(1, 11); // up to 10 rows
+      
+      // Strict check for CALL_START internally
+      hasCallStart = allColKeys.includes('CALL_START');
+      
+      previewExpanded = false;
+      buildColPicker(allColKeys);
+      buildPreviewTable(allColKeys, previewRows);
+      updateVatRowVisibility();
+      document.getElementById('date-filter-row').style.display   = hasCallStart ? 'flex' : 'none';
+      document.getElementById('output-mode-row').style.display   = pendingFiles.length > 1 ? 'flex' : 'none';
+      const fi = document.getElementById('fname-input');
+      if(fi && !fi.value) fi.value = pendingFiles[0].name.replace(/\.[^.]+$/, '');
+      dropZone.style.display = 'none';
+      document.getElementById('col-picker').style.display = 'block';
+      document.getElementById('error-box').style.display  = 'none';
+      refreshPreviewTotals();
+    } catch(err) {
+      showFileError('Error al leer el archivo: ' + err.message);
+      pendingFiles = []; allRawRows =[];
+      renderChips();
+      dropZone.style.display = 'block';
+    }
+  };
+  reader.onerror = () => {
+    showFileError('No se pudo leer el archivo. Comprueba que no esté dañado o en uso por otro programa.');
+    pendingFiles =[]; allRawRows =[];
+    renderChips();
+    dropZone.style.display = 'block';
+  };
+  reader.readAsArrayBuffer(pendingFiles[0]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// COL PICKER — with drag-to-reorder + search filter
+// ═══════════════════════════════════════════════════════════
+function buildColPicker(keys) {
+  const t = I18N[currentLang];
+  const searchVal = (document.getElementById('col-search')||{}).value||'';
+  const grid = document.getElementById('col-grid');
+  grid.innerHTML = keys.map(k => {
+    const label   = t.labels[k]||k;
+    const samples = previewRows.slice(0,3).map(r=>String(r[keys.indexOf(k)]??'').trim().slice(0,20)).filter(Boolean);
+    const tip     = samples.length ? t.tooltipValues+samples.join(' · ') : '';
+    const hidden  = searchVal && !label.toLowerCase().includes(searchVal.toLowerCase()) && !k.toLowerCase().includes(searchVal.toLowerCase());
+    return `<label class="col-item checked${hidden?' col-hidden':''}" id="item-${k}"
+      draggable="true"
+      ondragstart="colDragStart(event,'${k}')"
+      ondragover="colDragOver(event)"
+      ondrop="colDrop(event,'${k}')"
+      ondragend="colDragEnd()"
+      onclick="toggleItem(this)">
+      <span class="drag-handle" onclick="event.stopPropagation()">⠿</span>
+      <input type="checkbox" id="chk-${k}" checked onclick="event.stopPropagation();onColCheck()">
+      <div><div class="col-label">${label}</div><div class="col-orig">${k}</div></div>
+      ${tip?`<div class="col-tooltip">${tip}</div>`:''}
+    </label>`;
+  }).join('');
+  keys.forEach(k=>{
+    const chk=document.getElementById('chk-'+k);
+    if(chk) chk.addEventListener('change',function(){
+      document.getElementById('item-'+k).classList.toggle('checked',this.checked);
+      onColCheck();
+    });
+  });
+}
+
+function buildPreviewTable(keys, rows) {
+  const t = I18N[currentLang];
+  if(!rows.length) return;
+  const showRows = previewExpanded ? rows : rows.slice(0,3);
+  const moreBtn  = document.getElementById('btn-preview-more');
+  if(moreBtn) {
+    if(rows.length > 3) {
+      moreBtn.style.display='inline-block';
+      moreBtn.textContent = previewExpanded ? t.btnPreviewLess : t.btnPreviewMore;
+    } else { moreBtn.style.display='none'; }
+  }
+  document.getElementById('preview-table').innerHTML =
+    '<thead><tr>'+keys.map(k=>`<th title="${k}">${t.labels[k]||k}</th>`).join('')+'</tr></thead>'+
+    '<tbody>'+showRows.map(r=>'<tr>'+keys.map((_,i)=>`<td>${String(r[i]??'').slice(0,30)}</td>`).join('')+'</tr>').join('')+'</tbody>';
+  document.getElementById('preview-section').classList.add('visible');
+}
+
+function togglePreviewMore() {
+  previewExpanded = !previewExpanded;
+  buildPreviewTable(allColKeys, previewRows);
+}
+
+function onColCheck() {
+  updateVatRowVisibility();
+  refreshPreviewTotals();
+}
+
+function toggleItem(lbl){
+  const c=lbl.querySelector('input');
+  c.checked=!c.checked;
+  lbl.classList.toggle('checked',c.checked);
+  onColCheck();
+}
+function toggleAll(state){
+  allColKeys.forEach(k=>{
+    const c=document.getElementById('chk-'+k), i=document.getElementById('item-'+k);
+    if(c){c.checked=state;i.classList.toggle('checked',state);}
+  });
+  onColCheck();
+}
+function getSelectedCols(){
+  return allColKeys.filter(k=>{const c=document.getElementById('chk-'+k);return c&&c.checked;});
+}
+
+// ═══════════════════════════════════════════════════════════
+// COLUMN SEARCH FILTER
+// ═══════════════════════════════════════════════════════════
+function filterCols() {
+  buildColPicker(allColKeys);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DRAG-TO-REORDER COLUMNS
+// ═══════════════════════════════════════════════════════════
+function colDragStart(e, key) {
+  dragSrcKey = key;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(()=>{ const el=document.getElementById('item-'+key); if(el) el.classList.add('dragging'); },0);
+}
+function colDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function colDrop(e, targetKey) {
+  e.preventDefault();
+  e.stopPropagation();
+  if(!dragSrcKey || dragSrcKey === targetKey) return;
+  const srcIdx = allColKeys.indexOf(dragSrcKey);
+  const tgtIdx = allColKeys.indexOf(targetKey);
+  if(srcIdx < 0 || tgtIdx < 0) return;
+  allColKeys.splice(srcIdx, 1);
+  allColKeys.splice(tgtIdx, 0, dragSrcKey);
+  dragSrcKey = null;
+  buildColPicker(allColKeys);
+  buildPreviewTable(allColKeys, previewRows);
+  refreshPreviewTotals();
+}
+function colDragEnd() {
+  dragSrcKey = null;
+  document.querySelectorAll('.col-item').forEach(el=>el.classList.remove('dragging'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// PREVIEW TOTALS (before export)
+// ═══════════════════════════════════════════════════════════
+function refreshPreviewTotals() {
+  const sec  = document.getElementById('picker-totals-section');
+  const tbl  = document.getElementById('picker-totals-table');
+  if(!sec||!tbl||!allRawRows.length) { if(sec) sec.style.display='none'; return; }
+
+  const t        = I18N[currentLang];
+  const locale   = {de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'es-ES';
+  const selCols  = getSelectedCols();
+  if(!selCols.length){ sec.style.display='none'; return; }
+
+  // Run processRows on full data
+  let p;
+  try { p = processRows(allRawRows, selCols, t, getDateFilter()); } catch(e){ sec.style.display='none'; return; }
+  if(!p.rowCount){ sec.style.display='none'; return; }
+
+  // build simple summary with strict keys
+  const priceCol = selCols.find(h=>h==='PRICE');
+  const durCol   = selCols.find(h=>h==='DURATION_MINUTES');
+  const hasPrice = !!priceCol;
+  const hasDur   = !!durCol;
+
+  const summaryMap = {};
+  Object.entries(p.groups).forEach(([name, rows])=>{
+    let price=0, dur=0;
+    rows.forEach(r=>{
+      if(hasPrice){ const n=typeof r[priceCol]==='number'?r[priceCol]:parseFloat(String(r[priceCol]??'').replace(',','.')); if(!isNaN(n)) price+=n; }
+      if(hasDur){   const n=typeof r[durCol]==='number'?r[durCol]:parseFloat(String(r[durCol]??'').replace(',','.')); if(!isNaN(n)) dur+=n; }
+    });
+    summaryMap[name]={records:rows.length, price, dur};
+  });
+
+  const entries = Object.entries(summaryMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  let totRec=0, totPrice=0, totDur=0;
+  entries.forEach(([,v])=>{ totRec+=v.records; totPrice+=v.price; totDur+=v.dur; });
+
+  const doVat = vatEnabled && hasPrice;
+  const vatRate = getVatRate();
+
+  let thead = `<thead><tr><th>${t.summaryColClient}</th><th>${t.summaryColRecords}</th>`;
+  if(hasDur)   thead += `<th>${t.summaryColDuration}</th>`;
+  if(hasPrice) thead += `<th>${t.summaryColPrice} (€)</th>`;
+  if(doVat)    thead += `<th>${getVatLabels().amt}</th><th>${getVatLabels().total}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  entries.forEach(([name,v])=>{
+    tbody += `<tr><td>${name}</td><td>${v.records.toLocaleString(locale)}</td>`;
+    if(hasDur)   tbody += `<td>${v.dur.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    if(hasPrice) tbody += `<td>€ ${v.price.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    if(doVat) {
+      const vat   = v.price * vatRate;
+      const total = v.price * (1 + vatRate);
+      tbody += `<td>€ ${vat.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+      tbody += `<td>€ ${total.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    }
+    tbody += '</tr>';
+  });
+  tbody += `<tr class="tot-total"><td>${t.summaryTotal}</td><td>${totRec.toLocaleString(locale)}</td>`;
+  if(hasDur)   tbody += `<td>${totDur.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  if(hasPrice) tbody += `<td>€ ${totPrice.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  if(doVat) {
+    const vatTot   = totPrice * vatRate;
+    const totalTot = totPrice * (1 + vatRate);
+    tbody += `<td>€ ${vatTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    tbody += `<td>€ ${totalTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  }
+  tbody += '</tr></tbody>';
+
+  document.getElementById('preview-totals-title').textContent = t.previewTotalsTitle;
+  tbl.innerHTML = thead + tbody;
+  sec.style.display = 'block';
+}
+
+// Listen to date changes for live totals refresh
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('date-from').addEventListener('change', refreshPreviewTotals);
+  document.getElementById('date-to').addEventListener('change', refreshPreviewTotals);
+});
+
+// ═══════════════════════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════════════════════
+function renderChart(summaryData) {
+  const t=I18N[currentLang];
+  const priceData = summaryData.filter(sd=>sd.price!==null&&sd.price>0);
+  if(!priceData.length){document.getElementById('chart-section').style.display='none';return;}
+  const max = Math.max(...priceData.map(sd=>sd.price));
+  const locale={de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'es-ES';
+  const top =[...priceData].sort((a,b)=>b.price-a.price).slice(0,10);
+  document.getElementById('chart-title').textContent = t.chartTitle;
+  document.getElementById('chart-bars').innerHTML = top.map(sd=>{
+    const pct = max>0 ? Math.round((sd.price/max)*100) : 0;
+    const val = currencySymbol+' '+sd.price.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2});
+    return `<div class="chart-row">
+      <div class="chart-label" title="${sd.name}">${sd.name}</div>
+      <div class="chart-track"><div class="chart-bar" style="width:${pct}%"></div></div>
+      <div class="chart-val">${val}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('chart-section').style.display='block';
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.chart-bar').forEach(b=>{ const w=b.style.width; b.style.width='0%'; requestAnimationFrame(()=>b.style.width=w); });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOTALS TABLE (after export)
+// ═══════════════════════════════════════════════════════════
+function renderTotalsTable(summaryData, hasPrice, hasDuration) {
+  const sec = document.getElementById('totals-section');
+  const tbl = document.getElementById('totals-table');
+  const t   = I18N[currentLang];
+  const locale = {de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'es-ES';
+  if(!summaryData.length){ sec.style.display='none'; return; }
+  const doVat   = vatEnabled && hasPrice;
+  const vatRate = getVatRate();
+  let thead = `<thead><tr><th>${t.summaryColClient}</th><th>${t.summaryColRecords}</th>`;
+  if(hasDuration) thead += `<th>${t.summaryColDuration}</th>`;
+  if(hasPrice)    thead += `<th>${t.summaryColPrice} (€)</th>`;
+  if(doVat)       thead += `<th>${getVatLabels().amt}</th><th>${getVatLabels().total}</th>`;
+  thead += '</tr></thead>';
+  let totRec=0, totDur=0, totPrice=0;
+  let tbody = '<tbody>';
+  summaryData.forEach(sd => {
+    totRec   += sd.records;
+    totDur   += sd.duration||0;
+    totPrice += sd.price||0;
+    tbody += `<tr><td>${sd.name}</td><td>${sd.records.toLocaleString(locale)}</td>`;
+    if(hasDuration) tbody += `<td>${sd.duration!=null?sd.duration.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>`;
+    if(hasPrice)    tbody += `<td>${sd.price!=null?'€ '+sd.price.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>`;
+    if(doVat && sd.price!=null) {
+      const vat = sd.price * vatRate, total = sd.price * (1 + vatRate);
+      tbody += `<td>€ ${vat.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+      tbody += `<td>€ ${total.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    } else if(doVat) { tbody += '<td>—</td><td>—</td>'; }
+    tbody += '</tr>';
+  });
+  tbody += `<tr class="tot-total"><td>${t.summaryTotal}</td><td>${totRec.toLocaleString(locale)}</td>`;
+  if(hasDuration) tbody += `<td>${totDur.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  if(hasPrice)    tbody += `<td>€ ${totPrice.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  if(doVat) {
+    const vatTot = totPrice * vatRate, totalTot = totPrice * (1 + vatRate);
+    tbody += `<td>€ ${vatTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    tbody += `<td>€ ${totalTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+  }
+  tbody += '</tr></tbody>';
+  document.getElementById('totals-title').textContent = t.previewTotalsTitle;
+  tbl.innerHTML = thead + tbody;
+  sec.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PDF EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportPDF() {
+  const t      = I18N[currentLang];
+  const locale = {de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'es-ES';
+  if(!lastSummaryData.length) return;
+  const anyPrice    = lastSummaryData.some(sd=>sd.price!=null);
+  const anyDuration = lastSummaryData.some(sd=>sd.duration!=null);
+  let totRec=0, totDur=0, totPrice=0;
+  lastSummaryData.forEach(sd=>{ totRec+=sd.records; totDur+=sd.duration||0; totPrice+=sd.price||0; });
+
+  const doVat   = vatEnabled && anyPrice;
+  const vatRate = getVatRate();
+  const totPriceWithVat = doVat ? totPrice * (1 + vatRate) : totPrice;
+
+  let rows = lastSummaryData.map((sd,i) => {
+    let cols = `<td>${sd.name}</td><td>${sd.records.toLocaleString(locale)}</td>`;
+    if(anyDuration) cols += `<td>${sd.duration!=null?sd.duration.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>`;
+    if(anyPrice)    cols += `<td>${sd.price!=null?'€ '+sd.price.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>`;
+    if(doVat && sd.price!=null) {
+      const vat=sd.price*vatRate, tot=sd.price*(1+vatRate);
+      cols += `<td>€ ${vat.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+      cols += `<td>€ ${tot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>`;
+    } else if(doVat) { cols += '<td>—</td><td>—</td>'; }
+    return `<tr style="background:${i%2?'#f8f9ff':'#fff'}">${cols}</tr>`;
+  }).join('');
+
+  let totCols = `<td><strong>${t.summaryTotal}</strong></td><td><strong>${totRec.toLocaleString(locale)}</strong></td>`;
+  if(anyDuration) totCols += `<td><strong>${totDur.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>`;
+  if(anyPrice)    totCols += `<td><strong>€ ${totPrice.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>`;
+  if(doVat) {
+    const vatTot=totPrice*vatRate, totalTot=totPrice*(1+vatRate);
+    totCols += `<td><strong>€ ${vatTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>`;
+    totCols += `<td><strong>€ ${totalTot.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>`;
+  }
+
+  let thCols = `<th>${t.summaryColClient}</th><th>${t.summaryColRecords}</th>`;
+  if(anyDuration) thCols += `<th>${t.summaryColDuration}</th>`;
+  if(anyPrice)    thCols += `<th>${t.summaryColPrice} (€)</th>`;
+  if(doVat)       thCols += `<th>${getVatLabels().amt}</th><th>${getVatLabels().total}</th>`;
+
+  const dateStr = new Date().toLocaleDateString(locale);
+  const html = `<!DOCTYPE html><html lang="${currentLang}"><head><meta charset="UTF-8">
+<title>${t.pdfTitle}</title>
+<style>
+  body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1a1f36;margin:40px;font-size:12px;}
+  h1{font-size:20px;color:#3D5168;margin-bottom:4px;}
+  .sub{color:#888;font-size:11px;margin-bottom:24px;}
+  table{width:100%;border-collapse:collapse;margin-top:16px;}
+  th{background:#3D5168;color:#fff;padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  th:not(:first-child){text-align:right;}
+  td{padding:8px 12px;border-bottom:1px solid #e8ebf5;}
+  td:not(:first-child){text-align:right;}
+  .total-row td{background:#C4956A;color:#fff;font-weight:700;border-top:2px solid #a07548;}
+  .banner{background:linear-gradient(135deg,#3D5168,#4a6280);color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:20px;text-align:center;}
+  .banner .val{font-size:28px;font-weight:900;font-family:monospace;}
+  .banner .lbl{font-size:11px;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+  @media print{body{margin:20px;}}
+</style></head><body>
+<h1>${t.pdfTitle}</h1>
+<div class="sub">${dateStr}</div>
+${anyPrice?`<div class="banner"><div class="lbl">${doVat?getVatLabels().total:t.tcbLabel}</div><div class="val">€ ${(doVat?totPriceWithVat:totPrice).toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>${doVat?`<div style="font-size:10px;opacity:.7;margin-top:3px;">${t.summaryColPrice}: € ${totPrice.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})} · ${getVatLabels().amt}: € ${(totPrice*vatRate).toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:''}</div>`:''}
+<table><thead><tr>${thCols}</tr></thead><tbody>${rows}<tr class="total-row">${totCols}</tr></tbody></table>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank');
+  if(w){ w.document.write(html); w.document.close(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function toNumber(s){if(!s)return NaN;let v=s.replace(/[^0-9.,'\-]/g,'');if(!v)return NaN;const lc=v.lastIndexOf(','),ld=v.lastIndexOf('.');if(lc>ld)v=v.replace(/\./g,'').replace(',','.');else v=v.replace(/,/g,'');return parseFloat(v);}
+function formatPhone(raw){if(!raw&&raw!==0)return '';const d=String(raw).replace(/\D/g,'');if(!d)return String(raw);let cc;if(d.startsWith('1')&&d.length>=11&&d.length<=12)cc=1;else if(d.length<=11)cc=2;else cc=3;return '+'+d.slice(0,cc)+' '+d.slice(cc);}
+function colToLetter(idx){let s='';idx++;while(idx>0){idx--;s=String.fromCharCode(65+(idx%26))+s;idx=Math.floor(idx/26);}return s;}
+function setStep(n,pct,lbl){document.getElementById('prog-bar').style.width=pct+'%';document.getElementById('prog-label').textContent=lbl+'  '+pct+'%';for(let i=1;i<=9;i++){const el=document.getElementById('s'+i);if(el)el.className='step'+(i<n?' done':i===n?' active':'');}}
+function triggerDownload(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+
+// ═══════════════════════════════════════════════════════════
+// CORE: normalise + filter + group
+// ═══════════════════════════════════════════════════════════
+function processRows(rawRows, selectedCols, t, dateFilter) {
+  const SUM_AL       = new Set(['PRICE','UNIT_PRICE','DURATION_MINUTES']);
+  const PHONE_AL     = new Set(['CALLER_NUMBER','CALLED_NUMBER']);
+
+  const nameCol      = selectedCols.find(c=>c==='NAME');
+  const callStartCol = Object.keys(rawRows[0]||{}).find(c=>c==='CALL_START') || (selectedCols.includes('CALL_START') ? 'CALL_START' : null);
+  const hasDuration  = selectedCols.includes('DURATION_MINUTES');
+  const hasPrice     = selectedCols.includes('PRICE');
+
+  let rows = rawRows.map(r=>{
+    const nr=Object.assign({},r);
+    SUM_AL.forEach(col=>{
+      if(col in nr){const v=nr[col];if(typeof v==='number')return;const n=parseFloat(String(v??'').trim().replace(',','.'));nr[col]=isNaN(n)?v:n;}
+    });
+    return nr;
+  });
+
+  if((dateFilter.from||dateFilter.to)&&callStartCol) {
+    rows=rows.filter(r=>{
+      const ds=parseCallStartToDate(r[callStartCol]);
+      if(!ds) return false;
+      if(dateFilter.from&&ds<dateFilter.from) return false;
+      if(dateFilter.to  &&ds>dateFilter.to)   return false;
+      return true;
+    });
+  }
+
+  rows = rows.map(r=>{const o={};selectedCols.forEach(k=>{o[k]=r[k]??''});return o;});
+
+  let phonesFormatted=0;
+  rows = rows.map(r=>{
+    const nr=Object.assign({},r);
+    selectedCols.forEach(col=>{if(PHONE_AL.has(col)){nr[col]=formatPhone(nr[col]);phonesFormatted++;}});
+    return nr;
+  });
+
+  if(nameCol) rows.sort((a,b)=>String(a[nameCol]||'').localeCompare(String(b[nameCol]||''),undefined,{sensitivity:'base'}));
+  const groups={};
+  rows.forEach(r=>{
+    const key=nameCol?String(r[nameCol]||'(blank)').trim():'(All)';
+    if(!groups[key])groups[key]=[];
+    groups[key].push(r);
+  });
+
+  return{groups,headers:selectedCols,displayHeaders:selectedCols.map(h=>t.labels[h]||h),hasDuration,hasPrice,phonesFormatted,rowCount:rows.length};
+}
+
+// ═══════════════════════════════════════════════════════════
+// CORE: build workbook — PRO edition
+// ═══════════════════════════════════════════════════════════
+function buildWorkbook(groupsMap, headers, displayHeaders, hasDuration, hasPrice, t) {
+
+  // ── Palette ──────────────────────────────────────────────
+  const C = {
+    navy:    '3D5168',
+    navyD:   '2C3D50',
+    navyL:   'EEF1F6',
+    gold:    'C4956A',
+    goldD:   'A07548',
+    goldL:   'FDF6EE',
+    white:   'FFFFFF',
+    offW:    'F8F9FB',
+    stripe:  'F2F4F8',
+    text:    '1A1F36',
+    textM:   '4A5568',
+    border:  'D1D9E6',
+    green:   '22C7A8',
+    greenL:  'E8FAF7',
+  };
+
+  // ── Style builders ───────────────────────────────────────
+  const s = (font={}, fill={}, align={}, border={}) => ({
+    font: { name:'Calibri', sz:11, color:{rgb:C.text}, bold:false, ...font },
+    fill: Object.keys(fill).length ? { patternType:'solid', fgColor:{rgb: fill.bg||C.white}, ...fill } : { patternType:'none' },
+    alignment: { vertical:'center', wrapText:false, ...align },
+    border: Object.keys(border).length ? border : undefined,
+  });
+
+  const thinBorder = (color=C.border) => ({
+    top:    {style:'thin', color:{rgb:color}},
+    bottom: {style:'thin', color:{rgb:color}},
+    left:   {style:'thin', color:{rgb:color}},
+    right:  {style:'thin', color:{rgb:color}},
+  });
+  const bottomBorder = (color=C.border) => ({
+    bottom: {style:'medium', color:{rgb:color}},
+  });
+
+  // Numeric format codes
+  const FMT_NUM   = '#,##0.00';
+  const FMT_INT   = '#,##0';
+  const FMT_CCY   = `€#,##0.00`;
+
+  // ── Styles used in detail sheets ─────────────────────────
+  const ST_HDR   = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.navy},   {horizontal:'center'}, thinBorder(C.navyD));
+  const ST_ODD   = s({},                                       {},             {horizontal:'left'},   thinBorder());
+  const ST_EVEN  = s({},                                       {bg:C.stripe}, {horizontal:'left'},   thinBorder());
+  const ST_ODDR  = s({},                                       {},             {horizontal:'right'},  thinBorder());
+  const ST_EVENR = s({},                                       {bg:C.stripe}, {horizontal:'right'},  thinBorder());
+  const ST_ODDC  = s({},                                       {},             {horizontal:'center'}, thinBorder());
+  const ST_EVENC = s({},                                       {bg:C.stripe}, {horizontal:'center'}, thinBorder());
+  // Total row
+  const ST_TOTL  = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'left'},   thinBorder(C.goldD));
+  const ST_TOTR  = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'right'},  thinBorder(C.goldD));
+  const ST_TOTC  = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'center'}, thinBorder(C.goldD));
+  // Client banner (row 1 of each detail sheet)
+  const ST_CNAME = s({bold:true,sz:16,color:{rgb:C.navy}},    {bg:C.navyL},  {horizontal:'left'},   bottomBorder(C.navy));
+  const ST_CMETA = s({italic:true,sz:11,color:{rgb:C.textM}}, {bg:C.navyL},  {horizontal:'right'},  bottomBorder(C.navy));
+  const ST_CBLNK = s({},                                       {bg:C.navyL},  {},                    bottomBorder(C.navy));
+  // Price column accent
+  const ST_ODD_P  = s({color:{rgb:C.navyD}},                  {bg:C.goldL},  {horizontal:'right'},  thinBorder(C.gold));
+  const ST_EVEN_P = s({color:{rgb:C.navyD}},                  {bg:C.goldL},  {horizontal:'right'},  thinBorder(C.gold));
+
+  // ── Summary sheet styles ──────────────────────────────────
+  // Title block
+  const SS_TITLE  = s({bold:true,sz:22,color:{rgb:C.white}},   {bg:C.navy},   {horizontal:'left'},   bottomBorder(C.navyD));
+  const SS_TBLNK  = s({},                                       {bg:C.navy},   {},                    bottomBorder(C.navyD));
+  const SS_DATE   = s({italic:true,sz:11,color:{rgb:C.navyL}}, {bg:C.navy},   {horizontal:'right'},  bottomBorder(C.navyD));
+  // KPI row
+  const SS_KLB    = s({bold:true,sz:9,color:{rgb:C.textM}},    {bg:C.offW},   {horizontal:'center'}, thinBorder());
+  const SS_KVAL   = s({bold:true,sz:18,color:{rgb:C.navy}},    {bg:C.offW},   {horizontal:'center'}, thinBorder());
+  const SS_KTOT   = s({bold:true,sz:18,color:{rgb:C.white}},   {bg:C.navy},   {horizontal:'center'}, thinBorder(C.navyD));
+  const SS_KTOTL  = s({bold:true,sz:9,color:{rgb:C.navyL}},    {bg:C.navy},   {horizontal:'center'}, thinBorder(C.navyD));
+  // Table header
+  const SS_HDR    = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.navyD},  {horizontal:'center'}, thinBorder(C.navyD));
+  const SS_HDR1   = s({bold:true,sz:11,color:{rgb:C.white}},   {bg:C.navyD},  {horizontal:'left'},   thinBorder(C.navyD));
+  // Data rows
+  const SS_NAMEL  = s({bold:true,sz:11,color:{rgb:C.navy}},    {},             {horizontal:'left'},   thinBorder());
+  const SS_NAMELA = s({bold:true,sz:11,color:{rgb:C.navy}},    {bg:C.stripe}, {horizontal:'left'},   thinBorder());
+  const SS_NUM    = s({sz:11},                                  {},             {horizontal:'right'},  thinBorder());
+  const SS_NUMA   = s({sz:11},                                  {bg:C.stripe}, {horizontal:'right'},  thinBorder());
+  const SS_NUMC   = s({sz:11},                                  {},             {horizontal:'center'}, thinBorder());
+  const SS_NUMCA  = s({sz:11},                                  {bg:C.stripe}, {horizontal:'center'}, thinBorder());
+  const SS_PRICE  = s({sz:11,color:{rgb:C.navyD}},             {bg:C.goldL},  {horizontal:'right'},  thinBorder(C.gold));
+  const SS_PRICEA = s({sz:11,color:{rgb:C.navyD}},             {bg:C.goldL},  {horizontal:'right'},  thinBorder(C.gold));
+  // Grand total row
+  const SS_GTL    = s({bold:true,sz:12,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'left'},   thinBorder(C.goldD));
+  const SS_GTV    = s({bold:true,sz:12,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'right'},  thinBorder(C.goldD));
+  const SS_GTC    = s({bold:true,sz:12,color:{rgb:C.white}},   {bg:C.gold},   {horizontal:'center'}, thinBorder(C.goldD));
+  const SS_GTP    = s({bold:true,sz:12,color:{rgb:C.white}},   {bg:C.goldD},  {horizontal:'right'},  thinBorder(C.goldD));
+
+  const _SUM_AL  = new Set(['PRICE','UNIT_PRICE','DURATION_MINUTES']);
+  const priceCol = headers.find(h=>h==='PRICE');
+  const durCol   = headers.find(h=>h==='DURATION_MINUTES');
+  const doVat    = vatEnabled && hasPrice;
+  const vatRate  = getVatRate();
+
+  const newWB      = XLSX.utils.book_new();
+  const summaryData= [];
+  let grandTotalPrice=0, grandTotalDuration=0;
+
+  // Helper: set cell with style and optional format
+  function setCell(ws, col, row, value, style, fmt) {
+    const addr = colToLetter(col) + row;
+    if (!ws[addr]) ws[addr] = {};
+    ws[addr].v = value;
+    ws[addr].t = (typeof value === 'number') ? 'n' : 's';
+    if (style) ws[addr].s = style;
+    if (fmt)   ws[addr].z = fmt;
+  }
+
+  // Helper: apply merge
+  function addMerge(ws, c1, r1, c2, r2) {
+    if (!ws['!merges']) ws['!merges'] = [];
+    ws['!merges'].push({s:{c:c1,r:r1}, e:{c:c2,r:r2}});
+  }
+
+  // ── Build DETAIL sheets ───────────────────────────────────
+  const sortedNames = Object.keys(groupsMap).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+
+  sortedNames.forEach(name => {
+    const sheetRows = groupsMap[name];
+    const safe = name.replace(/[\/\\?\*\[\]:\x00-\x1f]/g,'_').replace(/^'|'$/g,'').trim().slice(0,31)||'Sheet';
+    const nc   = headers.length;
+    const ws   = {};
+
+    // ── Row 1: Client banner ──
+    const locale2 = {de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'en-GB'; const dateStr = new Date().toLocaleDateString(locale2);
+    setCell(ws, 0, 1, `  ${name}`, ST_CNAME);
+    for(let ci=1; ci<nc-1; ci++) setCell(ws, ci, 1, '', ST_CBLNK);
+    if(nc>1) setCell(ws, nc-1, 1, dateStr, ST_CMETA);
+    addMerge(ws, 0, 0, Math.max(0, nc-2), 0); // merge name cols
+
+    // ── Row 2: column headers ──
+    displayHeaders.forEach((h, ci) => {
+      const isNum = _SUM_AL.has(headers[ci]);
+      setCell(ws, ci, 2, h, ST_HDR);
+    });
+
+    // ── Data rows starting at row 3 ──
+    const sums = {};
+    sheetRows.forEach((r, ri) => {
+      const rowNum = ri + 3;
+      const isEven = ri % 2 === 0;
+      headers.forEach((h, ci) => {
+        const isNum = _SUM_AL.has(h);
+        const isPrice = (h === 'PRICE' || h === 'UNIT_PRICE');
+        let val = isNum ? (() => { const n=parseFloat(r[h]); return isNaN(n)?0:n; })() : (r[h]??'');
+        if(isNum) { sums[h] = (sums[h]||0) + (typeof val==='number'?val:0); }
+        let st, fmt;
+        if(isPrice) {
+          st  = isEven ? ST_EVEN_P : ST_ODD_P;
+          fmt = FMT_CCY;
+        } else if(isNum) {
+          st  = isEven ? ST_EVENR : ST_ODDR;
+          fmt = FMT_NUM;
+        } else {
+          st = isEven ? ST_EVEN : ST_ODD;
+        }
+        setCell(ws, ci, rowNum, val, st, fmt);
+      });
+    });
+
+    // ── Total row ──
+    const ni  = headers.findIndex(h=>h==='NAME');
+    const fi  = headers.findIndex(h=>_SUM_AL.has(h));
+    const li  = ni!==-1 ? ni : fi-1;
+    const totalRowNum = sheetRows.length + 3;
+    headers.forEach((h, ci) => {
+      const isPrice = (h==='PRICE'||h==='UNIT_PRICE');
+      if(_SUM_AL.has(h) && h in sums) {
+        setCell(ws, ci, totalRowNum, Math.round(sums[h]*1000)/1000, ST_TOTR, isPrice?FMT_CCY:FMT_NUM);
+      } else if(ci===li) {
+        setCell(ws, ci, totalRowNum, 'TOTAL', ST_TOTL);
+      } else {
+        setCell(ws, ci, totalRowNum, '', ST_TOTC);
+      }
+    });
+
+    // ── Sheet dimensions / col widths ──
+    const allRows = sheetRows.length + 3;
+    ws['!ref'] = `A1:${colToLetter(nc-1)}${allRows}`;
+    ws['!cols'] = headers.map((h, ci) => {
+      let m = displayHeaders[ci].length;
+      sheetRows.forEach(r => {
+        const v = String(r[h]??'');
+        if(v.length > m) m = v.length;
+      });
+      return { wch: Math.min(Math.max(m + 3, 10), 40) };
+    });
+    ws['!rows'] = [
+      {hpt:24}, // banner
+      {hpt:20}, // header
+      ...sheetRows.map(()=>({hpt:18})),
+      {hpt:22}, // total
+    ];
+    ws['!freeze'] = {xSplit:0, ySplit:2}; // freeze after banner+header
+
+    XLSX.utils.book_append_sheet(newWB, ws, safe);
+
+    const ps = hasPrice&&priceCol ? (sums[priceCol]??0) : null;
+    const ds = hasDuration&&durCol ? (sums[durCol]??0) : null;
+    if(hasPrice)    grandTotalPrice    += (ps??0);
+    if(hasDuration) grandTotalDuration += (ds??0);
+    summaryData.push({name, records:sheetRows.length, duration:ds, price:ps});
+  });
+
+  // ── Build SUMMARY sheet ────────────────────────────────────
+  const sc = [t.summaryColClient, t.summaryColRecords];
+  if(hasDuration) sc.push(t.summaryColDuration);
+  if(hasPrice)    sc.push(t.summaryColPrice+(currencySymbol?` (${currencySymbol})`:''));
+  if(doVat) { sc.push(getVatLabels().amt); sc.push(getVatLabels().total); }
+  const NC = sc.length;
+
+  const sumWS = {};
+  let ROW = 1;
+
+  // ── Block 1: Title banner (rows 1-2) ──
+  const titleText = t.pdfTitle || 'Invoice Summary';
+  const sumLocale = {de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'en-GB'; const dateLabel = new Date().toLocaleDateString(sumLocale, {year:'numeric',month:'long',day:'numeric'});
+  setCell(sumWS, 0, ROW, `  ${titleText}`, SS_TITLE);
+  for(let ci=1; ci<NC-1; ci++) setCell(sumWS, ci, ROW, '', SS_TBLNK);
+  if(NC>1) setCell(sumWS, NC-1, ROW, dateLabel, SS_DATE);
+  addMerge(sumWS, 0, ROW-1, NC-2, ROW-1);
+  ROW++;
+
+  // Spacer row
+  for(let ci=0;ci<NC;ci++) setCell(sumWS, ci, ROW, '', s({},{bg:C.navyL},{},bottomBorder(C.border)));
+  ROW++;
+
+  // ── Block 2: KPI cards (3 cards) ──
+  const totalRecords = summaryData.reduce((a,sd)=>a+sd.records, 0);
+  const totalClients = summaryData.length;
+  const KPI_BLNK = s({},{bg:C.offW},{},thinBorder());
+
+  // KPI titles row
+  const kpiCols = [0, Math.floor(NC/3), Math.floor(2*NC/3)];
+  const kpiEnds = [kpiCols[1]-1, kpiCols[2]-1, NC-1];
+  const kpiTitles = [t.lblSheets||'UNIQUE NAMES', t.kpiRecords||'TOTAL RECORDS', hasPrice ? (t.kpiTotal||'GRAND TOTAL') : (t.kpiDuration||'TOTAL DURATION')];
+  const kpiVals   = [
+    totalClients,
+    totalRecords,
+    hasPrice
+      ? (doVat ? `€ ${(grandTotalPrice*(1+vatRate)).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+               : `€ ${grandTotalPrice.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})}`)
+      : grandTotalDuration.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})
+  ];
+
+  // Label row
+  for(let ci=0;ci<NC;ci++) {
+    const ki = kpiCols.findIndex((kc,i)=>ci>=kc&&ci<=kpiEnds[i]);
+    if(ki>=0 && ci===kpiCols[ki]) {
+      setCell(sumWS, ci, ROW, kpiTitles[ki], ki===2?SS_KTOTL:SS_KLB);
+    } else {
+      setCell(sumWS, ci, ROW, '', ki===2?SS_TBLNK:SS_KLB);
+    }
+    if(ki>=0 && ci===kpiCols[ki] && kpiCols[ki]<kpiEnds[ki])
+      addMerge(sumWS, kpiCols[ki], ROW-1, kpiEnds[ki], ROW-1);
+  }
+  ROW++;
+
+  // Value row
+  for(let ci=0;ci<NC;ci++) {
+    const ki = kpiCols.findIndex((kc,i)=>ci>=kc&&ci<=kpiEnds[i]);
+    if(ki>=0 && ci===kpiCols[ki]) {
+      setCell(sumWS, ci, ROW, kpiVals[ki], ki===2?SS_KTOT:SS_KVAL);
+    } else {
+      setCell(sumWS, ci, ROW, '', ki===2?SS_KTOT:SS_KVAL);
+    }
+    if(ki>=0 && ci===kpiCols[ki] && kpiCols[ki]<kpiEnds[ki])
+      addMerge(sumWS, kpiCols[ki], ROW-1, kpiEnds[ki], ROW-1);
+  }
+  ROW++;
+
+  // Spacer
+  for(let ci=0;ci<NC;ci++) setCell(sumWS, ci, ROW, '', s({},{bg:C.navyL},{},bottomBorder(C.border)));
+  ROW++;
+
+  // ── Block 3: Table header ──
+  sc.forEach((h, ci) => {
+    setCell(sumWS, ci, ROW, h, ci===0 ? SS_HDR1 : SS_HDR);
+  });
+  ROW++;
+
+  // ── Block 4: Data rows ──
+  summaryData.forEach((sd, ri) => {
+    const isEven = ri % 2 === 0;
+    sc.forEach((_, ci) => {
+      let val, st, fmt;
+      if(ci===0) {
+        val = sd.name;
+        st  = isEven ? SS_NAMELA : SS_NAMEL;
+      } else if(ci===1) {
+        val = sd.records;
+        st  = isEven ? SS_NUMCA : SS_NUMC;
+        fmt = FMT_INT;
+      } else {
+        // figure out which data column this is
+        let offset = 2;
+        if(hasDuration && ci===offset) {
+          val = sd.duration!==null ? Math.round(sd.duration*1000)/1000 : '';
+          st  = isEven ? SS_NUMA : SS_NUM;
+          fmt = FMT_NUM;
+          offset++;
+        } else if(hasPrice && ci===offset+(hasDuration?1:0)) {
+          val = sd.price!==null ? Math.round(sd.price*1000)/1000 : '';
+          st  = isEven ? SS_PRICEA : SS_PRICE;
+          fmt = FMT_CCY;
+        } else if(doVat) {
+          const priceOffset = 2 + (hasDuration?1:0);
+          if(ci===priceOffset+1 && sd.price!==null) {
+            val = Math.round(sd.price*vatRate*1000)/1000;
+            st  = isEven ? SS_PRICEA : SS_PRICE;
+            fmt = FMT_CCY;
+          } else if(ci===priceOffset+2 && sd.price!==null) {
+            val = Math.round(sd.price*(1+vatRate)*1000)/1000;
+            st  = isEven ? SS_PRICEA : SS_PRICE;
+            fmt = FMT_CCY;
+          } else { val=''; st=isEven?SS_NUMA:SS_NUM; }
+        } else { val=''; st=isEven?SS_NUMA:SS_NUM; }
+      }
+      setCell(sumWS, ci, ROW, val??'', st, fmt);
+    });
+    ROW++;
+  });
+
+  // ── Block 5: Grand total row ──
+  const priceOffset = 2 + (hasDuration?1:0);
+  sc.forEach((_, ci) => {
+    let val, st, fmt;
+    if(ci===0) {
+      val = t.summaryTotal;
+      st  = SS_GTL;
+    } else if(ci===1) {
+      val = totalRecords;
+      st  = SS_GTC;
+      fmt = FMT_INT;
+    } else if(hasDuration && ci===2) {
+      val = Math.round(grandTotalDuration*1000)/1000;
+      st  = SS_GTV;
+      fmt = FMT_NUM;
+    } else if(hasPrice && ci===priceOffset) {
+      val = Math.round(grandTotalPrice*1000)/1000;
+      st  = SS_GTP;
+      fmt = FMT_CCY;
+    } else if(doVat && ci===priceOffset+1) {
+      val = Math.round(grandTotalPrice*vatRate*1000)/1000;
+      st  = SS_GTP;
+      fmt = FMT_CCY;
+    } else if(doVat && ci===priceOffset+2) {
+      val = Math.round(grandTotalPrice*(1+vatRate)*1000)/1000;
+      st  = SS_GTP;
+      fmt = FMT_CCY;
+    } else {
+      val = '';
+      st  = SS_GTV;
+    }
+    setCell(sumWS, ci, ROW, val??'', st, fmt);
+  });
+  ROW++;
+
+  // ── Col widths & row heights ──
+  sumWS['!ref'] = `A1:${colToLetter(NC-1)}${ROW-1}`;
+  sumWS['!cols'] = sc.map((h, ci) => {
+    let m = h.length;
+    summaryData.forEach(sd => {
+      const v = ci===0 ? sd.name : String(sd.records??'');
+      if(v.length>m) m=v.length;
+    });
+    return { wch: Math.min(Math.max(m+4, ci===0?24:12), 44) };
+  });
+  sumWS['!rows'] = [
+    {hpt:34},  // title
+    {hpt:6},   // spacer
+    {hpt:18},  // KPI labels
+    {hpt:34},  // KPI values
+    {hpt:6},   // spacer
+    {hpt:22},  // table header
+    ...summaryData.map(()=>({hpt:20})),
+    {hpt:24},  // grand total
+  ];
+  sumWS['!freeze'] = {xSplit:0, ySplit:6};
+
+  // ── Assemble final workbook ───────────────────────────────
+  const finalWB = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(finalWB, sumWS, t.summarySheetName);
+  newWB.SheetNames.forEach(sn => XLSX.utils.book_append_sheet(finalWB, newWB.Sheets[sn], sn));
+
+  const wbOut = XLSX.write(finalWB, {bookType:'xlsx', type:'array', cellStyles:true});
+  return {
+    blob: new Blob([wbOut], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+    grandTotalPrice, grandTotalDuration,
+    groupCount: Object.keys(groupsMap).length,
+    summaryData,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN PROCESS
+// ═══════════════════════════════════════════════════════════
+async function runProcess() {
+  const t=I18N[currentLang];
+  const selectedCols=getSelectedCols();
+  if(!selectedCols.length||!pendingFiles.length) return;
+
+  document.getElementById('col-picker').style.display    ='none';
+  document.getElementById('progress-wrap').style.display ='block';
+  document.getElementById('error-box').style.display     ='none';
+
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const total=pendingFiles.length;
+  const dateFilter=getDateFilter();
+  lastSummaryData=[];
+
+  try {
+    outputBlobs=[];
+
+    if(outputMode==='separate') {
+      for(let fi=0;fi<total;fi++){
+        const file=pendingFiles[fi];
+        const pfx=`[${fi+1}/${total}] `;
+        const pct=n=>Math.min(99,Math.round((fi/total)*100)+Math.round((n/100)*(100/total)));
+        setStep(1,pct(8),pfx+t.progLabels[0]); await sleep(50);
+        const buf=await file.arrayBuffer();
+        const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+        const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+        setStep(2,pct(20),pfx+t.progLabels[1]); await sleep(40);
+        setStep(3,pct(32),pfx+t.progLabels[2]); await sleep(40);
+        setStep(4,pct(44),pfx+t.progLabels[3]); await sleep(40);
+        setStep(5,pct(55),pfx+t.progLabels[4]); await sleep(40);
+        setStep(6,pct(66),pfx+t.progLabels[5]); await sleep(40);
+        setStep(7,pct(77),pfx+t.progLabels[6]); await sleep(40);
+        setStep(8,pct(88),pfx+t.progLabels[7]); await sleep(40);
+        const p=processRows(raw,selectedCols,t,dateFilter);
+        const {blob,grandTotalPrice,grandTotalDuration,groupCount,summaryData}=buildWorkbook(p.groups,p.headers,p.displayHeaders,p.hasDuration,p.hasPrice,t);
+        setStep(9,pct(100),pfx+'✓'); await sleep(40);
+        const outName=total===1?getOutputName(file.name.replace(/\.[^.]+$/,'')):file.name.replace(/\.[^.]+$/,'')+'_transformed.xlsx';
+        outputBlobs.push({blob,outputName:outName,grandTotalPrice,grandTotalDuration,groupCount,rowCount:p.rowCount,phonesFormatted:p.phonesFormatted,hasPrice:p.hasPrice,hasDuration:p.hasDuration,summaryData});
+        lastSummaryData.push(...summaryData);
+      }
+    } else {
+      setStep(1,5,t.progLabels[0]); await sleep(50);
+      let allGroups={},totalPhones=0,totalRows=0,hasPrice=false,hasDuration=false;
+      for(let fi=0;fi<total;fi++){
+        const file=pendingFiles[fi];
+        const pct=Math.round(5+((fi+1)/total)*70);
+        setStep(Math.min(8,fi+1),pct,`[${fi+1}/${total}] ${t.progLabels[0]}`); await sleep(40);
+        const buf=await file.arrayBuffer();
+        const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+        const raw=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+        const p=processRows(raw,selectedCols,t,dateFilter);
+        Object.entries(p.groups).forEach(([name,rows])=>{if(!allGroups[name])allGroups[name]=[];allGroups[name].push(...rows);});
+        totalPhones+=p.phonesFormatted; totalRows+=p.rowCount;
+        if(p.hasPrice)    hasPrice=true;
+        if(p.hasDuration) hasDuration=true;
+      }
+      setStep(8,85,t.progLabels[7]); await sleep(50);
+      const dispH=selectedCols.map(h=>t.labels[h]||h);
+      const {blob,grandTotalPrice,grandTotalDuration,groupCount,summaryData}=buildWorkbook(allGroups,selectedCols,dispH,hasDuration,hasPrice,t);
+      setStep(9,100,'✓'); await sleep(100);
+      const outName=getOutputName(t.combinedName);
+      outputBlobs.push({blob,outputName:outName,grandTotalPrice,grandTotalDuration,groupCount,rowCount:totalRows,phonesFormatted:totalPhones,hasPrice,hasDuration,summaryData});
+      lastSummaryData.push(...summaryData);
+    }
+
+    setStep(9,100,'✓'); await sleep(150);
+
+    const overallPrice=outputBlobs.reduce((a,r)=>a+(r.hasPrice?r.grandTotalPrice:0),0);
+    const anyPrice=outputBlobs.some(r=>r.hasPrice);
+    const anyDuration=outputBlobs.some(r=>r.hasDuration||false);
+    const locale={de:'de-DE',fr:'fr-FR',it:'it-IT',es:'es-ES'}[currentLang]||'es-ES';
+    if(anyPrice){
+      const doVat   = vatEnabled;
+      const vatRate = getVatRate();
+      const displayPrice = doVat ? overallPrice*(1+vatRate) : overallPrice;
+      document.getElementById('tcb-value').textContent=currencySymbol+' '+displayPrice.toLocaleString(locale,{minimumFractionDigits:2,maximumFractionDigits:2});
+      document.getElementById('tcb-label').textContent=doVat ? getVatLabels().total : t.tcbLabel;
+      document.getElementById('tcb-sub').textContent  =doVat ? getVatLabels().sub : t.tcbSub;
+      document.getElementById('total-cost-banner').style.display='block';
+    } else {
+      document.getElementById('total-cost-banner').style.display='none';
+    }
+
+    renderChart(lastSummaryData);
+    renderTotalsTable(lastSummaryData, anyPrice, anyDuration);
+
+    const _records=outputBlobs.reduce((a,r)=>a+r.rowCount,0);
+    const _sheets =outputBlobs.reduce((a,r)=>a+r.groupCount,0);
+    const _phones =outputBlobs.reduce((a,r)=>a+r.phonesFormatted,0);
+    document.getElementById('sc-records').textContent='0';
+    document.getElementById('sc-sheets').textContent ='0';
+    document.getElementById('sc-cols').textContent   ='0';
+    document.getElementById('sc-phones').textContent ='0';
+    document.getElementById('res-stats').textContent =total+' '+t.filesProcessed+'  ·  '+_sheets+' '+t.sheetsCreated;
+
+    const dlList=document.getElementById('dl-list');
+    dlList.innerHTML='';
+    outputBlobs.forEach(r=>{
+      const item=document.createElement('div'); item.className='dl-item';
+      const nm=document.createElement('span'); nm.className='dl-fname'; nm.textContent=r.outputName;
+      const btn=document.createElement('button'); btn.className='dl-btn'; btn.textContent=t.btnDl;
+      btn.onclick=()=>triggerDownload(r.blob,r.outputName);
+      item.appendChild(nm); item.appendChild(btn); dlList.appendChild(item);
+    });
+
+    document.getElementById('progress-wrap').style.display='none';
+    document.getElementById('result-wrap').style.display  ='block';
+    const rb=document.getElementById('return-btn-wrap');if(rb)rb.style.display='flex';
+
+    // Animate stat cards
+    setTimeout(()=>{
+      animateCounter(document.getElementById('sc-records'),_records,900);
+      animateCounter(document.getElementById('sc-sheets'), _sheets, 700);
+      animateCounter(document.getElementById('sc-cols'),   selectedCols.length, 500);
+      animateCounter(document.getElementById('sc-phones'), _phones, 800);
+    },120);
+
+  } catch(err){
+    document.getElementById('progress-wrap').style.display='none';
+    document.getElementById('col-picker').style.display   ='block';
+    document.getElementById('error-box').style.display    ='block';
+    document.getElementById('error-box').textContent      ='⚠️ Error: '+err.message;
+    console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════
+function resetApp(){
+  outputBlobs=[]; pendingFiles=[]; fileInput.value='';
+  previewRows=[]; allRawRows=[]; allColKeys=[]; hasCallStart=false; lastSummaryData=[]; previewExpanded=false; dragSrcKey=null;
+  setVat('none');
+  document.getElementById('vat-row').style.display='none';
+  ['col-picker','progress-wrap','result-wrap','error-box'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('preview-section').classList.remove('visible');
+  document.getElementById('file-chips').classList.remove('visible');
+  document.getElementById('dl-list').innerHTML='';
+  document.getElementById('chart-section').style.display='none';
+  document.getElementById('totals-section').style.display='none';
+  document.getElementById('picker-totals-section').style.display='none';
+  document.getElementById('date-filter-row').style.display='none';
+  document.getElementById('output-mode-row').style.display='none';
+  document.getElementById('fname-input').value='';
+  const cs=document.getElementById('col-search'); if(cs) cs.value='';
+  clearDates();
+  dropZone.style.display='block';
+  const rb=document.getElementById('return-btn-wrap');if(rb)rb.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANIMATED COUNTERS — stat cards in result screen
+// ═══════════════════════════════════════════════════════════
+function animateCounter(el, target, duration) {
+  if (!el) return;
+  const isFloat = String(target).includes('.');
+  const start = performance.now();
+  const from = 0;
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = from + (target - from) * eased;
+    el.textContent = isFloat
+      ? current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})
+      : Math.round(current).toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = isFloat
+      ? target.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})
+      : Math.round(target).toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT — default to EN
+// ═══════════════════════════════════════════════════════════
+setLang('en');
+
+</script>
+
+</body>
+</html>

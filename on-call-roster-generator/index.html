@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Cuadro de Guardias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --bg-card:#ffffff;
+    --border:#e2e6ed;
+    --border-hover:#d0d5dd;
+    --text-primary:#1a1d23;
+    --text-secondary:#4a5568;
+    --text-tertiary:#8b95a5;
+    --text-muted:#a0aec0;
+    --accent:#d97706;
+    --accent-light:#fef3c7;
+    --accent-hover:#b45309;
+    --success:#059669;
+    --success-bg:#d1fae5;
+    --error:#dc2626;
+    --error-bg:#fee2e2;
+    --radius-sm:8px;
+    --radius-md:12px;
+    --radius-lg:16px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md:0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg:0 8px 30px rgba(0,0,0,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text-primary);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding:40px 24px;
+  }
+  .wrap{max-width:720px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:40px;}
+  .brand-mark{
+    width:64px;height:64px;border-radius:18px;
+    background:linear-gradient(135deg,#1e293b,#334155);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 20px;box-shadow:var(--shadow-md);
+  }
+  .brand-mark span{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;font-size:28px;color:#fff;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:32px;font-weight:700;letter-spacing:-0.02em;
+    margin-bottom:8px;
+  }
+  .subtitle{color:var(--text-tertiary);font-size:15px;}
+
+  .drop-zone{
+    border:2px dashed var(--border);
+    border-radius:var(--radius-lg);
+    padding:60px 40px;
+    text-align:center;
+    background:var(--bg-card);
+    transition:all 0.3s;
+    cursor:pointer;
+    margin-bottom:24px;
+  }
+  .drop-zone:hover, .drop-zone.dragover{
+    border-color:var(--accent);
+    background:var(--accent-light);
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-md);
+  }
+  .drop-zone .dz-icon{
+    width:56px;height:56px;border-radius:14px;
+    background:var(--accent-light);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 16px;color:var(--accent);
+  }
+  .drop-zone .dz-title{font-size:16px;font-weight:600;margin-bottom:6px;}
+  .drop-zone .dz-sub{font-size:13px;color:var(--text-tertiary);}
+  .drop-zone input[type=file]{display:none;}
+
+  .file-info{
+    display:none;align-items:center;gap:12px;
+    background:var(--bg-card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:20px;
+  }
+  .file-info.show{display:flex;}
+  .file-icon{width:40px;height:40px;border-radius:10px;
+    background:var(--success-bg);display:flex;align-items:center;justify-content:center;
+    color:var(--success);flex-shrink:0;
+  }
+  .file-name{font-weight:600;font-size:14px;}
+  .file-size{font-size:12px;color:var(--text-tertiary);}
+  .file-remove{
+    margin-left:auto;background:none;border:none;color:var(--text-tertiary);
+    cursor:pointer;padding:6px;border-radius:6px;transition:all 0.2s;
+  }
+  .file-remove:hover{background:var(--error-bg);color:var(--error);}
+
+  .generate-btn{
+    width:100%;padding:16px;
+    background:var(--accent);color:#fff;border:none;
+    border-radius:var(--radius-md);font-size:15px;font-weight:700;
+    cursor:pointer;font-family:'Inter',sans-serif;
+    transition:all 0.2s;letter-spacing:0.02em;
+    box-shadow:0 2px 12px rgba(217,119,6,0.25);
+    margin-bottom:20px;
+  }
+  .generate-btn:hover:not(:disabled){
+    background:var(--accent-hover);
+    transform:translateY(-1px);
+    box-shadow:0 4px 20px rgba(217,119,6,0.35);
+  }
+  .generate-btn:disabled{
+    opacity:0.5;cursor:not-allowed;
+  }
+
+  .status-box{
+    display:none;padding:14px 18px;border-radius:var(--radius-md);
+    font-size:13px;font-weight:500;margin-bottom:20px;
+    align-items:center;gap:10px;
+  }
+  .status-box.show{display:flex;}
+  .status-box.success{background:var(--success-bg);color:var(--success);border:1px solid rgba(5,150,105,0.2);}
+  .status-box.error{background:var(--error-bg);color:var(--error);border:1px solid rgba(220,38,38,0.2);}
+  .status-box.processing{background:#eff6ff;color:#2563eb;border:1px solid rgba(37,99,235,0.2);}
+
+  .download-section{
+    display:none;background:var(--bg-card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;text-align:center;
+    margin-bottom:20px;
+  }
+  .download-section.show{display:block;}
+  .download-section h3{
+    font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:8px;
+  }
+  .download-section p{font-size:13px;color:var(--text-tertiary);margin-bottom:16px;}
+  .download-btn{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--success);color:#fff;border:none;
+    border-radius:var(--radius-md);padding:12px 28px;
+    font-size:14px;font-weight:700;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:all 0.2s;
+    text-decoration:none;
+  }
+  .download-btn:hover{
+    background:#047857;transform:translateY(-1px);
+    box-shadow:0 4px 16px rgba(5,150,105,0.3);
+  }
+
+  .preview-section{
+    display:none;background:var(--bg-card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;
+    max-height:400px;overflow:auto;
+  }
+  .preview-section.show{display:block;}
+  .preview-section h3{
+    font-family:'Space Grotesk',sans-serif;font-size:14px;
+    text-transform:uppercase;letter-spacing:0.1em;
+    color:var(--text-tertiary);margin-bottom:12px;
+  }
+  .preview-data{font-family:'Space Grotesk',monospace;font-size:11px;
+    background:#f8fafc;padding:12px;border-radius:var(--radius-sm);
+    border:1px solid var(--border);overflow:auto;max-height:300px;
+    white-space:pre-wrap;word-break:break-all;
+    color:var(--text-secondary);line-height:1.6;
+  }
+
+  .instructions{
+    background:var(--bg-card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;
+  }
+  .instructions h3{
+    font-family:'Space Grotesk',sans-serif;font-size:14px;
+    text-transform:uppercase;letter-spacing:0.1em;
+    color:var(--text-tertiary);margin-bottom:16px;
+  }
+  .instructions ul{list-style:none;padding:0;}
+  .instructions li{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:10px 0;border-top:1px solid var(--border);
+    font-size:13.5px;color:var(--text-secondary);line-height:1.5;
+  }
+  .instructions li:first-child{border-top:none;padding-top:0;}
+  .instructions .step-num{
+    width:24px;height:24px;border-radius:50%;
+    background:var(--accent-light);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;
+    flex-shrink:0;margin-top:1px;
+  }
+
+  .note{
+    text-align:center;color:var(--text-muted);font-size:11px;
+    margin-top:24px;line-height:1.6;
+  }
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand-mark"><span>G</span></div>
+    <h1>Generador de Cuadro de Guardias</h1>
+    <p class="subtitle">Convierte tu Excel de guardias en una p&aacute;gina web interactiva</p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="dz-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <div class="dz-title">Arrastra tu Excel aqu&iacute; o haz clic para seleccionar</div>
+    <div class="dz-sub">Soporta archivos .xlsx y .xls con las pesta&ntilde;as TELEF. OPERARIOS y GUARDIAS</div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+  </div>
+
+  <div class="file-info" id="fileInfo">
+    <div class="file-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div>
+      <div class="file-name" id="fileName">&mdash;</div>
+      <div class="file-size" id="fileSize">&mdash;</div>
+    </div>
+    <button class="file-remove" id="fileRemove" title="Quitar archivo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <button class="generate-btn" id="generateBtn" disabled>Generar p&aacute;gina de guardias</button>
+
+  <div class="status-box" id="statusBox"></div>
+
+  <div class="download-section" id="downloadSection">
+    <h3>&iexcl;P&aacute;gina generada correctamente!</h3>
+    <p>Descarga el archivo HTML y &aacute;brelo en cualquier navegador</p>
+    <a class="download-btn" id="downloadBtn" href="#" download="guardias.html">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar guardias.html
+    </a>
+  </div>
+
+  <div class="preview-section" id="previewSection">
+    <h3>Vista previa de datos extra&iacute;dos</h3>
+    <div class="preview-data" id="previewData"></div>
+  </div>
+
+  <div class="instructions">
+    <h3>&iquest;C&oacute;mo funciona?</h3>
+    <ul>
+      <li><span class="step-num">1</span><span><b>Prepara tu Excel</b> con dos pesta&ntilde;as: "TELEF. OPERARIOS" (nombres y tel&eacute;fonos) y "GUARDIAS 26" (fechas y operarios)</span></li>
+      <li><span class="step-num">2</span><span><b>Arrastra o selecciona</b> el archivo .xlsx en la zona de carga</span></li>
+      <li><span class="step-num">3</span><span><b>Haz clic en "Generar"</b> y espera unos segundos mientras procesamos los datos</span></li>
+      <li><span class="step-num">4</span><span><b>Descarga el HTML</b> resultante y &aacute;brelo en cualquier navegador &mdash; funciona sin internet</span></li>
+    </ul>
+  </div>
+
+  <div class="note">La p&aacute;gina generada incluye todos los datos embebidos, tel&eacute;fonos con +34 copiables,<br>filtro de turnos pasados en tiempo real, y dise&ntilde;o responsive.</div>
+</div>
+
+<script>
+let currentFile = null;
+let generatedHtml = null;
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const generateBtn = document.getElementById('generateBtn');
+const statusBox = document.getElementById('statusBox');
+const downloadSection = document.getElementById('downloadSection');
+const downloadBtn = document.getElementById('downloadBtn');
+const previewSection = document.getElementById('previewSection');
+const previewData = document.getElementById('previewData');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if(files.length) handleFile(files[0]);
+});
+
+fileInput.addEventListener('change', (e) => {
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+document.getElementById('fileRemove').addEventListener('click', (e) => {
+  e.stopPropagation();
+  currentFile = null;
+  fileInfo.classList.remove('show');
+  generateBtn.disabled = true;
+  downloadSection.classList.remove('show');
+  previewSection.classList.remove('show');
+  statusBox.classList.remove('show');
+  fileInput.value = '';
+});
+
+function handleFile(file){
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    showStatus('error', 'El archivo debe ser .xlsx o .xls');
+    return;
+  }
+  currentFile = file;
+  fileName.textContent = file.name;
+  fileSize.textContent = formatSize(file.size);
+  fileInfo.classList.add('show');
+  generateBtn.disabled = false;
+  downloadSection.classList.remove('show');
+  previewSection.classList.remove('show');
+  statusBox.classList.remove('show');
+}
+
+function showStatus(type, msg){
+  statusBox.className = 'status-box show ' + type;
+  statusBox.innerHTML = msg;
+}
+
+function formatSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ============== HTML TEMPLATE BUILDER ==============
+
+function buildGuardiasHtml(data, phoneMap, responsables){
+  const phoneMapJson = JSON.stringify(phoneMap, null, 2);
+  const dataJson = JSON.stringify(data, null, 2);
+  const respJson = JSON.stringify(responsables, null, 2);
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuadro de Guardias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f7fa;--bg-card:#ffffff;--border:#e2e6ed;--border-hover:#d0d5dd;
+    --text-primary:#1a1d23;--text-secondary:#4a5568;--text-tertiary:#8b95a5;--text-muted:#a0aec0;
+    --accent-warm:#d97706;--accent-warm-light:#fef3c7;
+    --accent-cool:#2563eb;--accent-cool-light:#dbeafe;
+    --accent-mint:#059669;--accent-mint-light:#d1fae5;
+    --accent-rose:#db2777;--accent-rose-light:#fce7f3;
+    --status-on:#059669;--status-on-bg:#d1fae5;
+    --status-off:#dc2626;--status-off-bg:#fee2e2;
+    --phone-bg:#f0f4ff;--phone-border:#c7d2fe;--phone-text:#4338ca;
+    --radius-sm:8px;--radius-md:12px;--radius-lg:16px;
+    --shadow-sm:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 16px rgba(0,0,0,0.08);--shadow-lg:0 8px 30px rgba(0,0,0,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text-primary);font-family:'Inter',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 60px;}
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--border);}
+  .brand{display:flex;align-items:center;gap:16px;}
+  .brand-mark{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#1e293b,#334155);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);}
+  .brand-mark span{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#fff;}
+  .brand h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary);}
+  .brand small{display:block;color:var(--text-tertiary);font-size:11.5px;margin-top:4px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;}
+  .clock{text-align:right;}
+  .clock .now{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--text-primary);display:block;margin-bottom:4px;letter-spacing:-0.01em;}
+  .clock .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--status-on);background:var(--status-on-bg);padding:3px 10px;border-radius:20px;font-weight:600;}
+  .dot-live{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--status-on);box-shadow:0 0 6px rgba(5,150,105,0.4);animation:pulse 2.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:28px;}
+  @media(max-width:720px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:0;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform 0.3s,box-shadow 0.3s,border-color 0.3s;}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent);opacity:0.7;transition:opacity 0.3s;}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--border-hover);}
+  .card:hover::before{opacity:1;}
+  .card-top{padding:18px 20px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+  .card-head{display:flex;align-items:center;gap:12px;}
+  .dept-icon{width:36px;height:36px;border-radius:10px;background:var(--card-accent-bg);display:flex;align-items:center;justify-content:center;color:var(--card-accent);flex-shrink:0;transition:transform 0.3s;}
+  .card:hover .dept-icon{transform:scale(1.05);}
+  .dept-name{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.01em;color:var(--text-primary);}
+  .status-pill{font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:0.04em;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;transition:all 0.3s;}
+  .status-pill.on{background:var(--status-on-bg);color:var(--status-on);border-color:rgba(5,150,105,0.2);}
+  .status-pill.off{background:var(--status-off-bg);color:var(--status-off);border-color:rgba(220,38,38,0.2);}
+  .status-pill .dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+  .status-pill.on .dot{background:var(--status-on);box-shadow:0 0 6px var(--status-on);}
+  .status-pill.off .dot{background:var(--status-off);box-shadow:0 0 6px var(--status-off);}
+  .card-body{padding:18px 20px 16px;}
+  .tech-section{margin-bottom:14px;}
+  .current-name{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin:0 0 8px;line-height:1.15;letter-spacing:-0.02em;color:var(--text-primary);transition:color 0.3s;}
+  .card:hover .current-name{color:var(--card-accent);}
+  .phone-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+  .phone-pill{display:inline-flex;align-items:center;gap:8px;background:var(--phone-bg);border:1px solid var(--phone-border);color:var(--phone-text);padding:6px 12px;border-radius:8px;font-family:'Space Grotesk',monospace;font-size:14px;font-weight:600;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;user-select:all;}
+  .phone-pill:hover{background:#e0e7ff;border-color:#a5b4fc;transform:translateY(-1px);box-shadow:0 2px 8px rgba(67,56,202,0.15);}
+  .phone-pill:active{transform:translateY(0);}
+  .phone-pill .phone-icon{width:14px;height:14px;opacity:0.7;}
+  .copy-hint{font-size:10px;color:var(--text-muted);font-weight:500;opacity:0;transition:opacity 0.2s;}
+  .phone-row:hover .copy-hint{opacity:1;}
+  .copy-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text-primary);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all 0.3s;z-index:1000;}
+  .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .current-range{color:var(--text-secondary);font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .current-range::before{content:'';display:inline-block;width:20px;height:1px;background:var(--text-muted);opacity:0.5;}
+  .resp-line{font-size:12px;color:var(--text-tertiary);margin-bottom:14px;border-top:1px dashed var(--border);padding-top:11px;display:flex;justify-content:space-between;align-items:center;}
+  .resp-line b{color:var(--text-secondary);font-weight:600;}
+  .resp-line .resp-tag{background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:11px;color:var(--text-tertiary);border:1px solid var(--border);font-weight:500;}
+  .upcoming-toggle{background:none;border:none;color:var(--card-accent);font-size:12px;font-weight:600;cursor:pointer;padding:0;width:100%;display:flex;align-items:center;justify-content:space-between;transition:opacity 0.2s;}
+  .upcoming-toggle:hover{opacity:0.75;}
+  .upcoming-toggle .toggle-label{display:flex;align-items:center;gap:6px;}
+  .upcoming-toggle svg{transition:transform 0.25s;}
+  .upcoming-toggle.open svg:first-child{transform:rotate(90deg);}
+  .upcoming-list{max-height:0;overflow:hidden;transition:max-height 0.35s,opacity 0.3s;opacity:0;}
+  .upcoming-list.show{max-height:500px;opacity:1;}
+  .upcoming-list-inner{margin-top:12px;padding-top:4px;}
+  .up-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:10px 0;border-top:1px solid var(--border);color:var(--text-secondary);transition:background 0.2s;margin:0 -4px;padding-left:4px;padding-right:4px;border-radius:6px;}
+  .up-row:hover{background:#f8fafc;}
+  .up-row:first-of-type{border-top:none;}
+  .up-row b{color:var(--text-primary);font-weight:600;font-size:13.5px;}
+  .up-row .up-range{font-size:11.5px;font-weight:500;color:var(--text-tertiary);background:#f1f5f9;padding:3px 8px;border-radius:6px;border:1px solid var(--border);font-family:'Space Grotesk',sans-serif;letter-spacing:0.02em;}
+  .up-phone{font-size:11px;color:var(--phone-text);font-family:'Space Grotesk',monospace;background:var(--phone-bg);padding:1px 6px;border-radius:4px;border:1px solid var(--phone-border);margin-left:6px;}
+  .no-data{color:var(--text-tertiary);font-size:13px;font-style:italic;padding:8px 0;}
+  .foot-grid{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;}
+  .responsables{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;flex:1;min-width:280px;box-shadow:var(--shadow-sm);transition:border-color 0.3s;}
+  .responsables:hover{border-color:var(--border-hover);}
+  .responsables h3{font-family:'Space Grotesk',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);margin:0 0 14px;font-weight:600;}
+  .resp-item{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;padding:10px 0;border-top:1px solid var(--border);transition:background 0.2s;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:6px;}
+  .resp-item:hover{background:#f8fafc;}
+  .resp-item:first-of-type{border-top:none;}
+  .resp-item span{color:var(--text-secondary);font-weight:500;}
+  .resp-item b{font-weight:600;color:var(--text-primary);}
+  .resp-item .resp-phone{font-family:'Space Grotesk',monospace;font-size:12px;color:var(--phone-text);background:var(--phone-bg);padding:2px 8px;border-radius:6px;border:1px solid var(--phone-border);}
+  .note{text-align:center;color:var(--text-muted);font-size:11px;margin-top:24px;line-height:1.7;letter-spacing:0.02em;}
+  .note code{background:#f1f5f9;padding:2px 6px;border-radius:4px;border:1px solid var(--border);font-family:'Space Grotesk',monospace;font-size:10.5px;}
+  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:3px;}::-webkit-scrollbar-thumb:hover{background:var(--text-tertiary);}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .card{animation:fadeInUp 0.5s both;}.card:nth-child(1){animation-delay:0.05s;}.card:nth-child(2){animation-delay:0.1s;}.card:nth-child(3){animation-delay:0.15s;}.card:nth-child(4){animation-delay:0.2s;}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+  .up-row{animation:slideIn 0.3s both;}.up-row:nth-child(1){animation-delay:0.02s;}.up-row:nth-child(2){animation-delay:0.04s;}.up-row:nth-child(3){animation-delay:0.06s;}.up-row:nth-child(4){animation-delay:0.08s;}
+</style>
+</head>
+<body>
+<div class="copy-toast" id="copyToast">&iexcl;N&uacute;mero copiado al portapapeles!</div>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-mark"><span>G</span></div>
+      <div>
+        <h1>Cuadro de Guardias</h1>
+        <small>Fontaner&iacute;a &middot; Electricidad &middot; Aire Acondicionado &middot; Dom&oacute;tica</small>
+      </div>
+    </div>
+    <div class="clock">
+      <span class="now" id="clockNow">&mdash;</span>
+      <span class="live-badge"><span class="dot-live"></span>En tiempo real</span>
+    </div>
+  </header>
+  <div class="grid" id="cardsGrid"></div>
+  <div class="foot-grid">
+    <div class="responsables" id="responsablesBox"><h3>Responsables de guardias</h3></div>
+  </div>
+  <div class="note" id="footNote">Datos importados del Excel &middot; Los turnos pasados se filtran seg&uacute;n la fecha del dispositivo &middot; Tel&eacute;fonos con +34 para copiar con un clic</div>
+</div>
+<script>
+const PHONE_MAP = ${phoneMapJson};
+function getPhone(name){
+  if(!name) return null;
+  const key = name.toLowerCase().trim();
+  if(PHONE_MAP[key]) return '+34 ' + PHONE_MAP[key];
+  const normalized = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if(PHONE_MAP[normalized]) return '+34 ' + PHONE_MAP[normalized];
+  const firstName = key.split(' ')[0];
+  if(PHONE_MAP[firstName]) return '+34 ' + PHONE_MAP[firstName];
+  return null;
+}
+function copyPhone(phone){
+  navigator.clipboard.writeText(phone).then(()=>{
+    const toast = document.getElementById('copyToast');
+    toast.textContent = phone + ' copiado';
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 2000);
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = phone;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    const toast = document.getElementById('copyToast');
+    toast.textContent = phone + ' copiado';
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 2000);
+  });
+}
+let DATA = ${dataJson};
+const ICONS = {
+  fontaneria: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2s6 7 6 12a6 6 0 0 1-12 0c0-5 6-12 6-12z"/></svg>',
+  electricidad: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  aire: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h6m2 0h4m2 0h6M9 5c0-1.5 1-2.5 2.5-2.5S14 3.5 14 5s-1 2-2 2.5M9 19c0 1.5 1 2.5 2.5 2.5S14 20.5 14 19s-1-2-2-2.5M17 7c1.5-.5 2.7 0 3.2 1.4.5 1.4-.2 2.6-1.7 3.1M17 17c1.5.5 2.7 0 3.2-1.4.5-1.4-.2-2.6-1.7-3.1"/></svg>',
+  domotica: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>'
+};
+const DEPTS = [
+  {key:'fontaneria', label:'Fontaner&iacute;a', accent:'var(--accent-warm)', bg:'var(--accent-warm-light)'},
+  {key:'electricidad', label:'Electricidad', accent:'var(--accent-cool)', bg:'var(--accent-cool-light)'},
+  {key:'aire', label:'Aire Acondicionado / Climatización', accent:'var(--accent-mint)', bg:'var(--accent-mint-light)'},
+  {key:'domotica', label:'Dom&oacute;tica', accent:'var(--accent-rose)', bg:'var(--accent-rose-light)'}
+];
+let RESPONSABLES = ${respJson};
+function respFor(deptLabel){
+  const hit = RESPONSABLES.find(r => r.dept.toLowerCase() === deptLabel.toLowerCase());
+  return hit || null;
+}
+function parseDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function endOfDay(s){const d=parseDate(s);d.setHours(23,59,59,999);return d;}
+function fmtDate(s){return parseDate(s).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function fmtDateShort(s){return parseDate(s).toLocaleDateString('es-ES',{day:'2-digit',month:'short'});}
+function findCurrent(entries,now){return entries.find(e=>parseDate(e.start)<=now&&now<=endOfDay(e.end));}
+function findUpcoming(entries,now,limit){return entries.filter(e=>parseDate(e.start)>now).sort((a,b)=>parseDate(a.start)-parseDate(b.start)).slice(0,limit);}
+function renderClock(){
+  const now=new Date();
+  document.getElementById('clockNow').textContent=now.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+}
+function phonePillHtml(phone){
+  if(!phone)return '';
+  return '<div class="phone-row"><span class="phone-pill" onclick="copyPhone(' + "'" + phone + "'" + ')"><svg class="phone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' + phone + '</span><span class="copy-hint">Haz clic para copiar</span></div>';
+}
+function renderCards(){
+  const now=new Date();
+  const grid=document.getElementById('cardsGrid');
+  grid.innerHTML='';
+  DEPTS.forEach(dept=>{
+    const entries=DATA[dept.key]||[];
+    const current=findCurrent(entries,now);
+    const upcoming=findUpcoming(entries,now,4);
+    const card=document.createElement('div');
+    card.className='card';
+    card.style.setProperty('--card-accent',dept.accent);
+    card.style.setProperty('--card-accent-bg',dept.bg);
+    let currentHtml;
+    if(current){
+      const phone=getPhone(current.name);
+      currentHtml='<div class="tech-section"><div class="current-name">' + current.name + '</div>' + (phone?phonePillHtml(phone):'') + '</div><div class="current-range">' + fmtDate(current.start) + ' &rarr; ' + fmtDate(current.end) + '</div>';
+    }else{
+      currentHtml='<div class="no-data" style="margin:8px 0 18px;">Sin guardia asignada para hoy</div>';
+    }
+    let upcomingHtml='';
+    if(upcoming.length){
+      upcomingHtml=upcoming.map(e=>{
+        const upPhone=getPhone(e.name);
+        return '<div class="up-row"><div><b>' + e.name + '</b>' + (upPhone?'<span class="up-phone">' + upPhone + '</span>':'') + '</div><span class="up-range">' + fmtDateShort(e.start) + ' &ndash; ' + fmtDateShort(e.end) + '</span></div>';
+      }).join('');
+    }else{
+      upcomingHtml='<div class="no-data" style="padding:8px 0;">No hay turnos futuros cargados</div>';
+    }
+    const resp=respFor(dept.label);
+    card.innerHTML='<div class="card-top"><div class="card-head"><span class="dept-icon">' + (ICONS[dept.key]||'') + '</span><span class="dept-name">' + dept.label + '</span></div><span class="status-pill ' + (current?'on':'off') + '"><span class="dot"></span>' + (current?'Activo':'Sin cubrir') + '</span></div><div class="card-body">' + currentHtml + '<div class="resp-line"><span>Responsable de guardia</span><span class="resp-tag">' + (resp?resp.name:'&mdash;') + '</span></div><button class="upcoming-toggle"><span class="toggle-label"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>Pr&oacute;ximos turnos (' + upcoming.length + ')</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div class="upcoming-list"><div class="upcoming-list-inner">' + upcomingHtml + '</div></div></div>';
+    const toggle=card.querySelector('.upcoming-toggle');
+    const list=card.querySelector('.upcoming-list');
+    const arrow=toggle.querySelector('svg:last-child');
+    toggle.addEventListener('click',()=>{toggle.classList.toggle('open');list.classList.toggle('show');arrow.style.transform=toggle.classList.contains('open')?'rotate(180deg)':'rotate(0deg)';});
+    grid.appendChild(card);
+  });
+}
+function renderResponsables(){
+  const box=document.getElementById('responsablesBox');
+  box.innerHTML='<h3>Responsables de guardias</h3>'+RESPONSABLES.map(r=>'<div class="resp-item"><span>' + r.dept + '</span><div style="display:flex;align-items:center;gap:8px;"><b>' + r.name + '</b>' + (r.phone?'<span class="resp-phone" onclick="copyPhone(' + "'" + r.phone + "'" + ')" style="cursor:pointer;">' + r.phone + '</span>':'') + '</div></div>').join('');
+}
+renderClock();renderCards();renderResponsables();
+setInterval(renderClock,30000);
+setInterval(renderCards,60000);
+<\/script>
+</body>
+</html>`;
+}
+
+// ============== EXCEL PARSER ==============
+
+function isValidDate(v){ return v instanceof Date && !isNaN(v); }
+function toISO(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function normalizeName(name){
+  return String(name).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function parsePhoneSheet(rows){
+  const map={};
+  for(const row of rows){
+    const name=row[1], phone=row[2];
+    if(name && phone && String(phone).trim().match(/^\d+$/)){
+      map[normalizeName(name)] = String(phone).trim();
+    }
+  }
+  return map;
+}
+
+function extractDateBlock(rows, colStart, colEnd, colName){
+  const out=[];
+  for(const row of rows){
+    const s=row[colStart], e=row[colEnd], n=row[colName];
+    if(isValidDate(s) && isValidDate(e) && n && String(n).trim()){
+      out.push({start:toISO(s), end:toISO(e), name:String(n).trim()});
+    }
+  }
+  return out;
+}
+
+function extractElectricidadDomotica(rows){
+  const electricidad=[], domotica=[];
+  let section='electricidad';
+  for(const row of rows){
+    const s=row[5], e=row[6], n=row[7];
+    if(typeof s==='string' && /dom[o\u00f3]tica/i.test(s)){section='domotica'; continue;}
+    if(isValidDate(s) && isValidDate(e) && n && String(n).trim()){
+      const entry={start:toISO(s), end:toISO(e), name:String(n).trim()};
+      (section==='electricidad'?electricidad:domotica).push(entry);
+    }
+  }
+  return {electricidad, domotica};
+}
+
+function extractResponsables(rows, phoneMap){
+  const list=[];
+  for(const row of rows){
+    const label=row[9], name=row[12];
+    if(typeof label==='string' && /guardia/i.test(label) && name && String(name).trim()){
+      const deptName=label.replace(/guardia/i,'').trim();
+      const nKey=normalizeName(name);
+      const phone=phoneMap[nKey]?'+34 '+phoneMap[nKey]:null;
+      list.push({dept:deptName, name:String(name).trim(), phone:phone});
+    }
+  }
+  return list;
+}
+
+function parseWorkbook(workbook){
+  const sheets=workbook.SheetNames;
+  const phoneWs=workbook.Sheets[sheets[0]];
+  const phoneRows=XLSX.utils.sheet_to_json(phoneWs,{header:1,defval:null});
+  const phoneMap=parsePhoneSheet(phoneRows);
+
+  const guardiasWs=workbook.Sheets[sheets[1]];
+  const rows=XLSX.utils.sheet_to_json(guardiasWs,{header:1,defval:null});
+
+  const fontaneria=extractDateBlock(rows,0,1,2);
+  const {electricidad,domotica}=extractElectricidadDomotica(rows);
+  const aire=extractDateBlock(rows,10,11,12);
+  const responsables=extractResponsables(rows,phoneMap);
+
+  if(!fontaneria.length && !electricidad.length && !domotica.length && !aire.length){
+    throw new Error('No se han encontrado turnos con el formato esperado.');
+  }
+
+  return {
+    data:{fontaneria,electricidad,aire,domotica},
+    phoneMap,
+    responsables:responsables.length?responsables:[]
+  };
+}
+
+// ============== GENERATE BUTTON ==============
+
+generateBtn.addEventListener('click', async () => {
+  if(!currentFile) return;
+
+  generateBtn.disabled = true;
+  showStatus('processing', '<span style="display:inline-flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20"/></svg> Procesando Excel...</span>');
+
+  try {
+    const buf = await currentFile.arrayBuffer();
+    const workbook = XLSX.read(buf, {type:'array', cellDates:true});
+    const parsed = parseWorkbook(workbook);
+
+    generatedHtml = buildGuardiasHtml(parsed.data, parsed.phoneMap, parsed.responsables);
+
+    // Show preview
+    let preview = '=== TELEFONOS ===\n';
+    for(const [k,v] of Object.entries(parsed.phoneMap)){
+      preview += k + ': +34 ' + v + '\n';
+    }
+    preview += '\n=== TURNOS ===\n';
+    for(const [dept,entries] of Object.entries(parsed.data)){
+      preview += '\n' + dept.toUpperCase() + ' (' + entries.length + ' turnos)\n';
+      entries.slice(0,3).forEach(e=>{
+        preview += '  ' + e.start + ' -> ' + e.end + ': ' + e.name + '\n';
+      });
+      if(entries.length>3) preview += '  ... y ' + (entries.length-3) + ' mas\n';
+    }
+    preview += '\n=== RESPONSABLES ===\n';
+    parsed.responsables.forEach(r=>{
+      preview += '  ' + r.dept + ': ' + r.name + ' ' + (r.phone||'') + '\n';
+    });
+    previewData.textContent = preview;
+    previewSection.classList.add('show');
+
+    // Setup download
+    const blob = new Blob([generatedHtml], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    downloadBtn.href = url;
+    downloadBtn.download = 'guardias.html';
+
+    showStatus('success', 'Pagina generada correctamente &middot; ' + formatSize(blob.size));
+    downloadSection.classList.add('show');
+
+  } catch(err) {
+    console.error(err);
+    showStatus('error', 'Error: ' + err.message);
+    generateBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
