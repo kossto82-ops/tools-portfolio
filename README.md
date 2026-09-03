@@ -16,6 +16,7 @@ Built with AI-assisted development, directing the architecture, UI/UX, and edge-
 | [`invoicing-generator`](./invoicing-generator) | Multilingual (ES/EN/FR/DE/IT) invoice/report generator with multi-file support, VAT handling, and styled Excel export | JavaScript, SheetJS (xlsx) |
 | [`on-call-roster-generator`](./on-call-roster-generator) | Converts an on-call/shift Excel schedule into an interactive, mobile-friendly webpage showing current and upcoming shifts by department | JavaScript |
 | [`on-call-scheduler-fr`](./on-call-scheduler-fr) | French-language variant of the on-call scheduler, with search/filter support | JavaScript |
+| [`Shiftflow`](./Shiftflow) | Workforce Scheduling & Shift Planner — constraint-based weekly planning, automated heuristic scheduling, conflict detection, and coverage analysis | React, TypeScript, Tailwind CSS, Vite |
 
 ## Notes
 

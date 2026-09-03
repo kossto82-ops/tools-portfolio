@@ -1,0 +1,6 @@
+{
+  "name": "ShiftFlow",
+  "description": "Workforce Scheduling & Shift Planner — Constraint-based weekly planning, automated heuristic scheduling, conflict detection, and coverage analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
