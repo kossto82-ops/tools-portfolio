@@ -4,7 +4,7 @@ A small collection of self-directed, AI-assisted internal tools built to automat
 
 Each tool is a single, self-contained HTML file (no backend, no build step). They run entirely in the browser: the user uploads an Excel/CSV file, the tool processes it client-side, and generates a formatted export or an interactive page. No data is sent to any server — everything happens locally in the browser tab.
 
-Built with AI-assisted development (Claude Code), directing the architecture, UI/UX, and edge-case handling while validating business logic and output against real-world data.
+Built with AI-assisted development, directing the architecture, UI/UX, and edge-case handling while validating business logic and output against real-world data.
 
 ## Tools in this repo
 
