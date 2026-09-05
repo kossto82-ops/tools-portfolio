@@ -5,6 +5,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // Relative asset paths so the built site can be hosted from any subpath.
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -12,10 +14,9 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Optional: set DISABLE_HMR=true to run without hot reload / file watching
+      // (useful in sandboxed or read-only environments).
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };

@@ -146,7 +146,7 @@ export interface CandidateEvaluation {
     coverageContribution: number;
     preferenceMatch: number;
     balancedWorkload: number;
-    overtimePenalty: number;
+    minHoursIncentive: number;
     roleMatchBonus: number;
   };
 }

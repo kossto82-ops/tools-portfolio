@@ -177,7 +177,7 @@ export function generateScheduleHeuristic(
           coverageContribution: 0,
           preferenceMatch: 0,
           balancedWorkload: 0,
-          overtimePenalty: 0,
+          minHoursIncentive: 0,
           roleMatchBonus: 0,
         };
 
@@ -208,6 +208,7 @@ export function generateScheduleHeuristic(
 
           // Target minimum hours incentive
           if (emp.minWeeklyHours && currentHours < emp.minWeeklyHours) {
+            scoreBreakdown.minHoursIncentive = 15;
             score += 15;
           }
 
@@ -282,6 +283,11 @@ export function generateScheduleHeuristic(
         if (winner.scoreBreakdown.preferenceMatch === 35) {
           reasons.push(`Prefers ${winnerEmp.preference} shifts`);
         }
+        if (winner.scoreBreakdown.minHoursIncentive > 0) {
+          reasons.push(
+            `Below weekly minimum (${(employeeHours.get(winner.employeeId) || 0)}h/${winnerEmp.minWeeklyHours}h)`
+          );
+        }
         reasons.push(
           `Available capacity (${(employeeHours.get(winner.employeeId) || 0)}h/${winnerEmp.maxWeeklyHours}h)`
         );
@@ -329,9 +335,9 @@ export function generateScheduleHeuristic(
   const explanationSummary: string[] = [
     `1. Scanned ${requirements.length} coverage requirements across Monday to Sunday (${totalSlotsRequested} total staff shifts needed).`,
     `2. Prioritized heavily constrained slots and specialized roles first using Minimum Remaining Values (MRV).`,
-    `3. Filtered candidate pool by strict availability windows and zero overlap constraints.`,
-    `4. Prevented contractual overtime by enforcing employee weekly maximum hours limits.`,
-    `5. Balanced hours distribution by favoring employees with highest remaining capacity.`,
+    `3. Hard constraints enforced: only staff available at that day/time, no overlapping shifts, correct role, and no one exceeds their weekly max hours.`,
+    `4. Balanced workload by favoring employees with the highest remaining capacity.`,
+    `5. Soft constraints: shift preferences (morning/afternoon) and progress toward weekly minimum hours used as tiebreakers.`,
   ];
 
   if (!isFullyCovered) {
