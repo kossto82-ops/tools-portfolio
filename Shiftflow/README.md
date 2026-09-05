@@ -17,203 +17,371 @@ Constraint-based weekly planning, automated heuristic scheduling, conflict detec
 </div>
 
 ---
+# ShiftFlow — Workforce Scheduling & Operations
 
-## TL;DR
+**Turn workforce planning from a manual process into a constraint-aware workflow.**
 
-- **Generate** a full weekly roster from your team's availability, roles, and coverage needs.
-- **Understand** why every decision was made — each slot shows the reasoning and the candidates that were rejected and why.
-- **Intervene** with a What-If editor, then let the app re-validate the whole schedule in real time.
-- **Run anywhere** — a static front-end with zero configuration. No database, no backend, no environment variables.
+ShiftFlow is a workforce scheduling application designed to help teams create workable schedules while making **availability conflicts, coverage gaps and operational constraints** visible.
 
----
+It was built around a real-world operations problem:
 
-## Features
-
-### Scheduling
-- **Heuristic constraint-based generator** — builds a complete week of shifts in milliseconds.
-- **Minimum Remaining Values (MRV)** ordering — the most constrained slots (fewest eligible staff, specialized roles) are filled first, so a rarely-available employee isn't "consumed" by an easy slot.
-- **Scored candidate selection** — every eligible employee is ranked, and the best fit is chosen per slot.
-
-### Hard constraints (always enforced)
-| Constraint | What the engine guarantees |
-| --- | --- |
-| Availability | Staff are only assigned to days/times within their stated availability windows |
-| No overlapping shifts | An employee is never on two simultaneous shifts |
-| Role requirements | Slots that require a role (e.g. `manager`) are only filled by staff with that role |
-| Weekly max hours | Nobody is assigned more hours than their contractual maximum |
-
-### Soft constraints (used as tiebreakers)
-- **Shift preferences** — if an employee prefers morning or afternoon shifts, the optimizer favors matching them.
-- **Balanced workload** — employees with more remaining capacity are preferred, distributing hours fairly.
-- **Weekly minimum hours** — staff below their minimum get prioritized so the team's commitment is met.
-
-### Explanability
-- **Transparency panel** — pick any slot to see which employees were considered, their scores, and exactly why each ineligible candidate was rejected (`unavailable`, `overlapping shift`, `role mismatch`, `would exceed weekly max hours`, etc.).
-- **Bottleneck detection** — when a slot can't be filled, the app aggregates the reasons across all candidates (e.g. `"2 staff: Unavailable at this time"`).
-- **Quality score (0–100)** — coverage %, hard/soft violations, preference satisfaction, and workload fairness are computed live after every change.
-
-### Verification & What-If
-- Every edit you make in the UI is **re-validated instantly** against the same constraint rules.
-- **Manual overrides** are flagged, and you can **revert to the algorithmic baseline** at any time.
-- Covered/understaffed/overstaffed status per slot, plus per-employee workload summaries.
-
-### Export
-- **CSV** download and a **printable** schedule view for the planning period.
+> **Creating a good schedule is not simply assigning people to shifts. It means balancing availability, coverage, rules and operational requirements at the same time.**
 
 ---
 
-## Getting started
+## 🎯 The Problem
 
-**Prerequisites:** [Node.js](https://nodejs.org/) 18+ (npm is bundled).
+Workforce scheduling can quickly become a manual optimisation problem.
 
-There is **no configuration step**. No `.env`, no API keys, no external services.
+A planner may need to consider:
 
-```bash
-# 1. Install dependencies
-npm install
+* Employee availability
+* Shift requirements
+* Minimum coverage
+* Maximum workload
+* Existing assignments
+* Conflicting shifts
+* Operational rules
+* Unresolved staffing gaps
 
-# 2. Start the dev server (http://localhost:3000)
-npm run dev
+When these constraints are handled manually, changing one assignment can create problems elsewhere.
+
+The objective of ShiftFlow is to make those constraints explicit and help planners identify problems before a schedule is finalized.
+
+---
+
+# 💡 The Solution
+
+ShiftFlow provides a workflow for:
+
+```text
+Define Workforce
+       ↓
+Configure Availability
+       ↓
+Define Shift Requirements
+       ↓
+Generate Schedule
+       ↓
+Validate Constraints
+       ↓
+Review Conflicts
+       ↓
+Analyse Coverage
+       ↓
+Finalize Schedule
 ```
 
-Open <http://localhost:3000> and you're done. The app loads with a ready-to-use demo scenario so you can explore immediately.
-
-> Trying it in another language? Use the language toggle in the sidebar (English / Español).
+The system is designed around the **planning workflow**, rather than simply providing a calendar UI.
 
 ---
 
-## Scripts
+# ✨ Core Capabilities
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite dev server on port 3000 |
-| `npm run build` | Production build into `dist/` |
-| `npm run preview` | Serve the production build locally |
-| `npm test` | Run the unit test suite (Vitest) |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run lint` | Type-check the whole project with `tsc --noEmit` |
-| `npm run clean` | Remove the `dist/` folder (cross-platform) |
+### Workforce Management
 
----
+Manage the people involved in the scheduling process and their relevant availability.
 
-## How the algorithm works
+### Shift Planning
 
-The scheduler is a **greedy constraint solver** with two phases:
+Create and organize shifts according to operational requirements.
 
-1. **Order (MRV).** Requirements are sorted so that the ones with the smallest eligible candidate pool come first, with role-gated slots prioritized over unconstrained ones. This prevents early, easy assignments from starving later, harder ones.
+### Constraint Awareness
 
-2. **Assign.** For each slot, every employee is evaluated against the hard constraints. Ineligible candidates are rejected with a recorded reason. Eligible candidates are then scored:
+The scheduling process considers multiple constraints instead of treating every assignment independently.
 
-   - **+100** base coverage contribution
-   - **+35 / +15** if the shift matches their preference (`any` gets a small bonus)
-   - **+0–30** proportional to **remaining capacity** (most-loaded staff score lower)
-   - **+15** if the employee is below their weekly minimum hours
-   - **+10** if the role matches an optional role preference
-   - **−10** as a small fatigue penalty when an employee already works ≥5 days
+### Conflict Detection
 
-   The highest-scoring eligible employee is assigned. If nobody is eligible, the slot is left unfilled — never compromised.
+Identify scheduling problems such as incompatible assignments or availability conflicts.
 
-The same rules are encoded independently in [`src/engine/constraintEngine.ts`](src/engine/constraintEngine.ts), which **always** re-validates the complete schedule (including What-If edits) and reports violations and a quality score. The generator and the validator are kept separate on purpose: the validator is the source of truth.
+### Coverage Analysis
 
-### Where the code lives
+Make staffing gaps visible so planners can identify where operational requirements are not being met.
 
-```
-src/
-  engine/
-    schedulingAlgorithm.ts   # the generator (heuristic + MRV + scoring)
-    constraintEngine.ts      # the independent validator (hard/soft checks, quality score)
-  components/
-    AlgorithmTransparencyView.tsx  # per-slot reasoning & candidate breakdown
-    AnalysisHubView.tsx            # conflicts + explainability hub
-    ...
-  data/presetScenarios.ts    # demo scenarios to explore the engine
-  utils/time.ts              # time helpers (overlap, windows, shift types)
-```
+### Schedule Review
+
+Allow the planner to inspect and adjust the generated result rather than treating automation as a black box.
 
 ---
 
-## Testing
+# 🧠 Scheduling Approach
 
-The engine is covered by a deterministic test suite (Vitest) that verifies the contract: respecting hard constraints, order-independence via MRV, and the quality of the explanations.
+ShiftFlow uses a **heuristic scheduling approach** rather than attempting to solve the entire scheduling problem through brute force.
 
-```bash
-npm test
+The scheduler evaluates available assignments against operational constraints and attempts to produce a feasible schedule.
+
+Conceptually:
+
+```text
+Employees
+    +
+Availability
+    +
+Shift Requirements
+    +
+Scheduling Constraints
+          ↓
+    Scheduling Engine
+          ↓
+    Candidate Schedule
+          ↓
+       Validation
+          ↓
+ ┌────────┴────────┐
+ │                 │
+ ▼                 ▼
+Valid          Conflicts
+Schedule       / Gaps
 ```
 
-Test files:
-
-- [`tests/schedulingAlgorithm.test.ts`](tests/schedulingAlgorithm.test.ts) — the generator respects availability, overlaps, roles, and weekly max hours; produces explanations and bottleneck reasons; and is invariant to input order.
-- [`tests/constraintEngine.test.ts`](tests/constraintEngine.test.ts) — the validator detects every violation type and computes coverage, fairness, and the quality score.
+This approach keeps the system practical while making unresolved constraints visible to the user.
 
 ---
 
-## Deployment
+# 🔎 Constraints & Validation
 
-ShiftFlow is a **static front-end**. The build has no servers, no API calls, and uses relative asset paths (`base: './'`), so `dist/` works at the root of any host **and** in a subpath.
+A schedule is only useful if it works operationally.
 
-```bash
-npm run build   # outputs to dist/
+ShiftFlow therefore separates:
+
+**Schedule generation**
+
+from
+
+**Schedule validation**
+
+This allows the system to distinguish between:
+
+* assignments that can be made
+* assignments that conflict
+* coverage requirements that are not satisfied
+* constraints that remain unresolved
+
+The result is not simply:
+
+> **"Here is a schedule."**
+
+It is:
+
+> **"Here is the best schedule the system could construct, and here are the problems you still need to address."**
+
+That distinction is important in real operational workflows.
+
+---
+
+# 🖥️ Product Design
+
+The interface is designed around the way an operations planner actually reviews a schedule.
+
+The objective is to make important information visible without forcing the user to inspect every assignment manually.
+
+Key principles include:
+
+* Clear schedule visibility
+* Fast identification of conflicts
+* Coverage awareness
+* Minimal unnecessary interaction
+* Human review after automated planning
+* Operational information prioritized over decorative UI
+
+Automation assists the planner.
+
+**The planner remains in control.**
+
+---
+
+# 🏗️ Architecture
+
+At a high level:
+
+```text
+┌──────────────────────────┐
+│        React UI          │
+│ Workforce / Scheduling   │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│   Scheduling Workflow    │
+│                          │
+│ Requirements             │
+│ Availability             │
+│ Constraints              │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│   Scheduling Engine      │
+│                          │
+│ Assignment heuristics    │
+│ Constraint evaluation    │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│      Validation          │
+│                          │
+│ Conflicts                │
+│ Coverage                 │
+│ Unresolved constraints   │
+└──────────────────────────┘
 ```
 
-Then deploy `dist/` to any static host:
+The separation between the user workflow, scheduling logic and validation makes the system easier to reason about and extend.
 
-- **Vercel** → framework preset "Vite", build command `npm run build`, output `dist`
-- **Netlify** → build command `npm run build`, publish directory `dist`
-- **GitHub Pages** → publish the `dist/` folder
-- **Any web server** (nginx, Apache, S3, Cloudflare Pages…) → serve `dist/`
+---
 
-Alternatively, verify the production bundle locally before deploying:
+# 🧪 Validation & Testing
 
-```bash
-npm run preview
+Scheduling systems are particularly sensitive to edge cases.
+
+A small change in an assignment can affect multiple constraints.
+
+For that reason, the project treats scheduling logic as business-critical application logic rather than simple UI behaviour.
+
+Testing focuses on areas such as:
+
+* Scheduling rules
+* Constraint handling
+* Conflict detection
+* Coverage calculations
+* Edge cases
+* User workflow behaviour
+
+---
+
+# 🚀 Live Demo
+
+**[Try ShiftFlow](https://tools-portfolio-z8f9.vercel.app/)**
+
+The deployed application provides a browser-based demonstration of the scheduling workflow.
+
+---
+
+# 🛠️ Technology
+
+**Frontend**
+
+* React
+* TypeScript
+* Vite
+
+**Application**
+
+* Scheduling logic
+* Constraint evaluation
+* Conflict detection
+* Coverage analysis
+
+**Development**
+
+* Modern JavaScript / TypeScript tooling
+* Automated validation
+* GitHub-based development workflow
+
+---
+
+# 📈 Business Value
+
+ShiftFlow is designed around a simple operational objective:
+
+### Reduce manual scheduling effort.
+
+Instead of repeatedly checking every employee and every shift manually, the system helps surface:
+
+* Where coverage is insufficient
+* Where assignments conflict
+* Which constraints remain unresolved
+* Which parts of the schedule require human attention
+
+The system therefore acts as a **planning assistant**, not an autonomous decision-maker.
+
+---
+
+# 🔄 Why Automation Instead of a Simple Calendar?
+
+A conventional calendar can display assignments.
+
+It does not necessarily understand whether those assignments make operational sense.
+
+ShiftFlow treats scheduling as a **constraint problem**.
+
+That means the system can reason about the relationship between:
+
+```text
+People
+   ↕
+Availability
+   ↕
+Shifts
+   ↕
+Coverage
+   ↕
+Constraints
 ```
 
-No runtime configuration, secrets, or environment variables are required in any environment.
+This is the core difference between a scheduling interface and a scheduling system.
 
 ---
 
-## Tech stack
+# 🧩 What This Project Demonstrates
 
-| Layer | Choice |
-| --- | --- |
-| Framework | [React 19](https://react.dev/) |
-| Build tool | [Vite 6](https://vite.dev/) |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
-| Icons | [lucide-react](https://lucide.dev/) |
-| Animations | [motion](https://motion.dev/) |
-| Testing | [Vitest](https://vitest.dev/) |
-| Language | TypeScript (`tsc --noEmit` type-checks cleanly) |
+### Business / Operations
+
+* Workflow analysis
+* Constraint modelling
+* Workforce planning
+* Operational problem solving
+* Human-in-the-loop automation
+
+### Product
+
+* Workflow-oriented UX
+* Information prioritization
+* Exception handling
+* Decision-support design
+
+### Engineering
+
+* React
+* TypeScript
+* Application architecture
+* Scheduling algorithms
+* Business logic
+* Validation
 
 ---
 
-## Tech highlights
+# 🧠 Design Philosophy
 
-- **Dual-engine architecture** — a heuristic generator plus an independent validator keeps the source of truth separate and auditable.
-- **Order-independent scheduling** — MRV ordering means results don't depend on how requirements are listed.
-- **Explanations as data** — every decision (and every rejection) is part of the result object, ready to be rendered or exported.
-- **Zero-dependency runtime** — everything runs in the browser; there is no backend to maintain.
+ShiftFlow follows a simple principle:
+
+> **Automate the repetitive work. Keep humans responsible for the decisions.**
+
+Scheduling software should not hide uncertainty behind an apparently perfect result.
+
+A useful system should show:
+
+**What works.**
+
+**What conflicts.**
+
+**What is missing.**
+
+**What requires human attention.**
 
 ---
 
-## Roadmap ideas
+# 👤 About the Project
 
-- Persist scenarios (localStorage / file import-export of JSON).
-- Multi-week planning and part-time/min-max hour reconciliation across weeks.
-- Drag-and-drop roster editing with live constraint feedback.
-- Hard constraint tuning (minimum rest between shifts, max consecutive days).
+ShiftFlow is part of my exploration of **business operations automation**.
+
+My background is in Operations and Customer Experience, so the project starts from the operational problem rather than from a technical exercise.
+
+The objective is to combine that domain understanding with software development to build tools that make real workflows easier, faster and more reliable.
 
 ---
 
 ## License
 
-[MIT](./LICENSE) — see the LICENSE file for details.
-
-## Contributors
-
-<a href="https://github.com/kossto82-ops">
-  <img src="https://github.com/kossto82-ops.png" width="80" alt="Raúl Rodríguez Cruz" />
-  <br />
-  <b>Raúl Rodríguez Cruz</b>
-  <br />
-  <sub>@kossto82-ops</sub>
-</a>
+See the repository license for details.
